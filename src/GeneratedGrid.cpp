@@ -4,11 +4,13 @@
 namespace deepdecoder {
 
 thread_local std::mt19937_64 GeneratedGrid::_re(long(time(0)));
-std::uniform_real_distribution<> GeneratedGrid::_angle_dis(0., M_PI*0.25);
-std::uniform_int_distribution<>  GeneratedGrid::_white_dis(0x60, 0x80);
-std::uniform_int_distribution<>  GeneratedGrid::_outer_ring_color_dis(0x90, 0xb0);
+std::uniform_real_distribution<> GeneratedGrid::_angle_dis(0., 2*M_PI*(60./360.));
+std::uniform_real_distribution<> GeneratedGrid::_z_angle_dis(0., 2*M_PI);
+std::uniform_int_distribution<>  GeneratedGrid::_white_dis(0x80, 0xa0);
 std::uniform_int_distribution<>  GeneratedGrid::_black_dis(0x20, 0x40);
-std::uniform_real_distribution<> GeneratedGrid::_gaussian_blur_dis(1, 6);
+std::uniform_int_distribution<>  GeneratedGrid::_background_dis(0x38, 0x48);
+std::uniform_real_distribution<> GeneratedGrid::_gaussian_blur_dis(2, 8);
+
 std::bernoulli_distribution GeneratedGrid::_coin_dis(0.5);
 GeneratedGrid::GeneratedGrid()
         : GeneratedGrid(cv::Point2i(0, 0), 25., 0, 0, 0) {
@@ -55,7 +57,7 @@ void GeneratedGrid::draw(cv::Mat &img, const cv::Point &center) const {
     }
     cv::fillConvexPoly(img, inner_white_semicircle, _white);
     cv::fillConvexPoly(img, inner_black_semicircle, _black);
-    cv::GaussianBlur(img, img, cv::Size(7, 7), _gaussian_blur);
+    cv::GaussianBlur(img, img, cv::Size(_gaussian_blur_ks, _gaussian_blur_ks), _gaussian_blur);
 }
 
 cv::Scalar GeneratedGrid::tribool2Color(const boost::logic::tribool &tribool) const
@@ -80,18 +82,18 @@ cv::Scalar GeneratedGrid::tribool2Color(const boost::logic::tribool &tribool) co
 void GeneratedGrid::generateView() {
     int b = _black_dis(_re);
     int w = _white_dis(_re);
-    int o = _outer_ring_color_dis(_re);
     _black = cv::Scalar(b, b, b);
     _white = cv::Scalar(w, w, w);
-    _outer_ring_color = cv::Scalar(o, o, o);
     _angle_x = _angle_dis(_re);
     _angle_y = _angle_dis(_re);
-    _angle_z = _angle_dis(_re);
+    _angle_z = _z_angle_dis(_re);
+    _background_color = _background_dis(_re);
     _gaussian_blur = _gaussian_blur_dis(_re);
 }
 void GeneratedGrid::generateID() {
 
     for (size_t i = 0; i < _ID.size(); i++) {
+
         _ID[i] = _coin_dis(_re);
     }
 }
@@ -108,6 +110,7 @@ caffe::Datum gridToCaffeDatum(const GeneratedGrid & grid, const cv::Mat & mat) {
     datum.set_encoded(true);
     return datum;
 }
+
 std::vector<caffe::Datum> generateData(size_t batch_size, bool greyscale) {
     int type = greyscale ? CV_8U : CV_8UC3;
     std::vector<caffe::Datum> data(batch_size);
@@ -119,6 +122,7 @@ std::vector<caffe::Datum> generateData(size_t batch_size, bool greyscale) {
     }
     return data;
 }
+
 int GeneratedGrid::getLabel() const {
     // TODO: check how the tag is structured
     int label = 0;
@@ -128,6 +132,12 @@ int GeneratedGrid::getLabel() const {
         }
     }
     return label;
+}
+
+cv::Mat GeneratedGrid::cvMat() const {
+    cv::Mat mat(TAG_SIZE, TAG_SIZE, CV_8U, _background_color);
+    draw(mat, cv::Point2i(TAG_SIZE/2, TAG_SIZE/2));
+    return mat;
 }
 }
 
