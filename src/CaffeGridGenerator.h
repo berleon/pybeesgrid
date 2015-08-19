@@ -26,7 +26,7 @@ public:
 };
 
 template<typename Dtype>
-inline MemoryDataLayerSPtr<Dtype> extractMemoryDataLayer(boost::shared_ptr<caffe::Net<Dtype>> net) {
+inline MemoryDataLayerSPtr<Dtype> extractMemoryDataLayer(caffe::Net<Dtype> * net) {
     auto top_layer = net->layers()[0];
     CHECK(std::string("MemoryData").compare(top_layer->type()) == 0);
     return boost::dynamic_pointer_cast<caffe::MemoryDataLayer<Dtype>>(top_layer);
@@ -35,9 +35,9 @@ inline MemoryDataLayerSPtr<Dtype> extractMemoryDataLayer(boost::shared_ptr<caffe
 template<typename Dtype>
 void addGridGeneratorToMemoryDataLayer(caffe::Solver<Dtype> &solver) {
     auto grid_gen = boost::make_shared<GridGenerator<Dtype>>();
-    extractMemoryDataLayer<Dtype>(solver.net())->SetMatGenerator(grid_gen);
+    extractMemoryDataLayer<Dtype>(solver.net().get())->SetMatGenerator(grid_gen);
     for(auto & net : solver.test_nets()) {
-        extractMemoryDataLayer<Dtype>(net)->SetMatGenerator(grid_gen);
+        extractMemoryDataLayer<Dtype>(net.get())->SetMatGenerator(grid_gen);
     }
 }
 

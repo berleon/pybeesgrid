@@ -33,9 +33,30 @@ layer {
   }
 }
 layer {
+  include {
+    phase: TRAIN
+  }
   name: "loss"
   type: "SoftmaxWithLoss"
   bottom: "fc"
   bottom: "label"
   top: "loss"
+}
+
+layer {
+  include {
+    phase: TEST
+  }
+  name: "prob"
+  type: "Softmax"
+  bottom: "fc"
+  top: "prob"
+}
+layer {
+  include {
+    phase: TEST
+  }
+  name: "silence_labels"
+  type: "Silence"
+  bottom: "label"
 }
