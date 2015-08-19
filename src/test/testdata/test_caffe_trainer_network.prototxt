@@ -1,0 +1,41 @@
+name: "TestCaffeTrainer"
+layer {
+  name: "data"
+  type: "MemoryData"
+  top: "data"
+  top: "label"
+  transform_param {
+    scale: 0.00390625
+  }
+  memory_data_param {
+    batch_size: 64
+    channels: 1
+    height: 60
+    width: 60
+  }
+
+}
+layer {
+  name: "fc"
+  type: "InnerProduct"
+  bottom: "data"
+  top: "fc"
+  inner_product_param {
+    num_output: 4096
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "loss"
+  type: "SoftmaxWithLoss"
+  bottom: "fc"
+  bottom: "label"
+  top: "loss"
+}
