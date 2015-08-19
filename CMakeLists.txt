@@ -3,9 +3,37 @@ cmake_minimum_required(VERSION 2.6)
 cmake_policy(SET CMP0020 NEW)
 cmake_policy(SET CMP0009 NEW)
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-project(deep-localizer)
+project(deepdecoder)
 
+#------------------------------------------------------------------------------
+# Required CPM Setup - no need to modify - See: https://github.com/iauns/cpm
+#------------------------------------------------------------------------------
+set(CPM_DIR "${CMAKE_CURRENT_BINARY_DIR}/cpm_packages" CACHE TYPE STRING)
+find_package(Git)
+if(NOT GIT_FOUND)
+    message(FATAL_ERROR "CPM requires Git.")
+endif()
+if (NOT EXISTS ${CPM_DIR}/CPM.cmake)
+    message(STATUS "Cloning repo (https://github.com/iauns/cpm)")
+    execute_process(
+      COMMAND "${GIT_EXECUTABLE}" clone https://github.com/iauns/cpm ${CPM_DIR}
+      RESULT_VARIABLE error_code
+      OUTPUT_QUIET ERROR_QUIET)
+    if(error_code)
+        message(FATAL_ERROR "CPM failed to get the hash for HEAD")
+    endif()
+endif()
+include(${CPM_DIR}/CPM.cmake)
+
+CPM_AddModule("BioTracker"
+  SOURCE_DIR /home/leon/uni/vision_swp/biotracker)
+
+CPM_AddModule("cpm_catch"
+  GIT_REPOSITORY "https://github.com/bcachet/cpm-catch")
+
+CPM_Finish()
+
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ ${CMAKE_MODULE_PATH})
 
 # project dependecies
@@ -38,7 +66,7 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR
     # enable all warnings
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Woverloaded-virtual -Wold-style-cast -Wnon-virtual-dtor -Wsign-promo -Wno-missing-braces ")
     # warnings are errors
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=unused-variable -Wno-error=unused-parameter")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror -Wno-error=unused-variable -Wno-error=unused-parameter -Wno-error=non-virtual-dtor")
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
     # Force to always compile with W3 and treat warnings as errors
@@ -87,22 +115,29 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	endif()
 endif()
 
+
 # use runtime analyzers when using clang/gcc in debug mode
-if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug" AND
-	( "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND
-		( GCC_VERSION VERSION_GREATER 4.9 OR GCC_VERSION VERSION_EQUAL 4.9 ))
-	OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND
+		(GCC_VERSION VERSION_GREATER 4.9 OR GCC_VERSION VERSION_EQUAL 4.9))
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer")
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-optimize-sibling-calls")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined")
+	endif()
+
+	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-optimize-sibling-calls")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=integer")
+	endif()
 endif()
-
-
-add_subdirectory(deps)
 
 # include deps dependecies as SYSTEM headers to prevent warnings from
 # deps files. unfortunatelly, this has no effect when using MSVC.
 include_directories(
-    SYSTEM ${PIPELINE_INCLUDE_DIR}
     SYSTEM ${CATCH_INCLUDE_DIR}
     SYSTEM ${OpenCV_INCLUDE_DIRS}
     SYSTEM ${Caffe_INCLUDE_DIRS}
@@ -110,15 +145,15 @@ include_directories(
     SYSTEM ${CUDA_INCLUDE_DIRS}
     SYSTEM ${DEEP_CLASSIFIER_INCLUDE_DIR}
 )
-link_directories(${PIPELINE_LD_DIR})
+
 set(libs
-    "Pipeline"
     ${OpenCV_LIBS}
     ${Boost_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
     ${Caffe_LIBRARIES}
     ${LMDB_LIBRARIES}
     ${CUDA_LIBRARIES}
+    ${CPM_LIBRARIES}
 )
 
 enable_testing(true)

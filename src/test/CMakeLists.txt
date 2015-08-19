@@ -12,3 +12,5 @@ foreach(test ${tests})
     set(test_bin ${CMAKE_CURRENT_BINARY_DIR}/${name})
     add_test(${name} ${test_bin})
 endforeach()
+
+add_subdirectory(testdata)
