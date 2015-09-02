@@ -158,4 +158,5 @@ set(libs
 
 enable_testing(true)
 add_subdirectory(src)
+add_subdirectory(python)
 
