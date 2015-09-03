@@ -39,8 +39,8 @@ std::vector<Dtype> flatten(std::vector<std::vector<Dtype>> vec) {
 template<typename Dtype>
 class CaffeEvaluator : public GroundTruthDataLoader<Dtype> {
 public:
-    inline explicit CaffeEvaluator(std::vector<std::string> && gt_files) :
-            GroundTruthDataLoader<Dtype>(std::forward<std::vector<std::string>>(gt_files)) { }
+    inline explicit CaffeEvaluator(std::vector<std::string> & gt_files) :
+            GroundTruthDataLoader<Dtype>(gt_files) { }
 
     CaffeEvaluationResult evaluate(caffe::Net<Dtype> & net) {
         size_t n_total = 0;

@@ -12,12 +12,11 @@ namespace deepdecoder {
 template<typename Dtype>
 class GroundTruthDataLoader {
 public:
-    GroundTruthDataLoader(std::vector<std::string> &&gt_files)
+    GroundTruthDataLoader(const std::vector<std::string> &gt_files)
             : _gt_files(gt_files), _cache_idx(0), _gt_files_idx(0) {
-    //    fillCache(false);
     }
 
-    dataset_t<Dtype> batch(size_t batch_size, bool repeat = false) {
+    boost::optional<dataset_t<Dtype>> batch(size_t batch_size, bool repeat = false) {
         auto cache_left = [&]() { return cacheSize() - static_cast<long>(_cache_idx); };
         dataset_t<Dtype> dataset;
         auto & imgs = dataset.first;
@@ -29,7 +28,9 @@ public:
                 break;
             }
         }
-        CHECK_LT(_cache_idx, cacheSize());
+        if(_cache_idx >= cacheSize()) {
+            return boost::optional<dataset_t<Dtype>>();
+        }
         const auto & img_begin = _img_cache.begin() + _cache_idx;
         const auto & labels_begin = _labels_cache.begin() + _cache_idx;
         imgs.insert(imgs.end(), img_begin, img_begin + step);
@@ -104,7 +105,7 @@ protected:
         return true;
     }
 
-    const std::vector<std::string> _gt_files;
+    std::vector<std::string> _gt_files;
     std::vector<cv::Mat> _img_cache;
     std::vector<std::vector<Dtype>> _labels_cache;
     size_t _cache_idx;

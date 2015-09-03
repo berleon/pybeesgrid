@@ -11,17 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# setup.py file
-
-import sys
-import os
-import shutil
-
-from distutils.core import setup
-from distutils.extension import Extension
-
-setup(
-    name='deepdecoder',
-    packages=['deepdecoder'],
-    package_data={'deepdecoder': ['*.so']}
-)

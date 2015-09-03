@@ -12,5 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-STUFF = "hi"
-print("hello world!")
+
+from . import pydeepdecoder as pydd
+
+
+def batches(gt_files, batchsize=64, repeat=False):
+    gt_loader = pydd.GTDataLoader(gt_files)
+    while True:
+        batch = gt_loader.batch(batchsize, repeat)
+        if batch is None:
+            return
+        else:
+            yield batch
+

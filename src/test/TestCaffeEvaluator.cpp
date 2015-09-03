@@ -17,7 +17,7 @@ TEST_CASE("CaffeEvaluator", "") {
             "testdata/Cam_0_20140804152006_3",
             "testdata/Cam_0_20140804152006_3"
     };
-    CaffeEvaluator<float> evaluator(std::move(gt_files));
+    CaffeEvaluator<float> evaluator(gt_files);
     SECTION("it can read all ground truth images") {
         io::remove_all("caffe_evaluator_gt_images");
         io::create_directories("caffe_evaluator_gt_images");
