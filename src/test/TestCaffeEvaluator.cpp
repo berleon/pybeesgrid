@@ -17,14 +17,15 @@ TEST_CASE("CaffeEvaluator", "") {
             "testdata/Cam_0_20140804152006_3",
             "testdata/Cam_0_20140804152006_3"
     };
-    CaffeEvaluator evaluator(std::move(gt_files));
+    CaffeEvaluator<float> evaluator(std::move(gt_files));
     SECTION("it can read all ground truth images") {
-        io::create_directories("gt_images");
-        dataset_t<float> dataset = evaluator.getAllData<float>();
+        io::remove_all("caffe_evaluator_gt_images");
+        io::create_directories("caffe_evaluator_gt_images");
+        dataset_t<float> dataset = evaluator.getAllData();
         REQUIRE(dataset.first.size() > 100);
         for(size_t i = 0; i < dataset.first.size(); i++) {
             auto & mat = dataset.first.at(i);
-            auto output_path = io::unique_path("gt_images/%%%%%%%%%%%.jpeg");
+            auto output_path = io::unique_path("caffe_evaluator_gt_images/%%%%%%%%%%%.jpeg");
             cv::imwrite(output_path.string(), mat);
         }
     }
