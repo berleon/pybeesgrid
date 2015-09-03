@@ -25,8 +25,13 @@ if (NOT EXISTS ${CPM_DIR}/CPM.cmake)
 endif()
 include(${CPM_DIR}/CPM.cmake)
 
+# the biotracker needs the submodules initialized. But I don't know how to do
+# that with cpm. Until this is fixed you must set this path manually to a
+# local biotracker repository with the submodules initialized.
 CPM_AddModule("BioTracker"
-  SOURCE_DIR /home/leon/uni/vision_swp/biotracker)
+    SOURCE_DIR /home/leon/uni/vision_swp/biotracker)
+    # GIT_REPOSITORY "git@github.com:berleon/biotracker.git"
+    # GIT_TAG "cpm"
 
 CPM_AddModule("cpm_catch"
   GIT_REPOSITORY "https://github.com/bcachet/cpm-catch")
