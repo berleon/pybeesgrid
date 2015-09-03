@@ -13,6 +13,43 @@
 #include "deepdecoder.h"
 
 namespace deepdecoder {
+class GridGenerator {
+    GridGenerator();
+
+    inline void setWhite(int begin, int end) {
+        _white = std::make_pair(begin, end);
+    }
+
+    inline void setBlack(int begin, int end) {
+        _black = std::make_pair(begin, end);
+    }
+
+    inline void setBackground(int begin, int end) {
+        _background = std::make_pair(begin, end);
+        _background_dis = std::uniform_int_distribution<>(begin, end);
+    }
+
+    inline void setGaussianBlur(double begin, double end) {
+        _gaussian_blur = std::make_pair(begin, end);
+        _gaussian_blur_dis = std::uniform_real_distribution<>(begin, end);
+    }
+private:
+    std::pair<double, double> _z_angle;
+    std::pair<double, double> _angle;
+    std::pair<double, double> _gaussian_blur;
+    std::pair<int, int> _white;
+    std::pair<int, int> _black;
+    std::pair<int, int> _background;
+
+    std::mt19937_64 _re;
+    std::uniform_real_distribution<> _angle_dis; //(0., 2*M_PI*(60./360.));
+    std::uniform_real_distribution<> _z_angle_dis; //(0., 2*M_PI);
+    std::uniform_int_distribution<>  _white_dis; //(0x80, 0xa0);
+    std::uniform_int_distribution<>  _black_dis; //(0x20, 0x40);
+    std::uniform_int_distribution<>  _background_dis; //(0x38, 0x48);
+    std::uniform_real_distribution<> _gaussian_blur_dis; //(2, 8);
+};
+
 
 class GeneratedGrid : public Grid {
 public:
@@ -23,7 +60,12 @@ public:
 
     virtual ~GeneratedGrid() override;
 
-    int getLabel() const;
+    int getLabelAsInt() const;
+
+    template<typename Dtype>
+    std::vector<Dtype> getLabelAsVector() const {
+        return triboolIDtoVector<Dtype>(_ID);
+    }
     /**
      * draws 2D projection of 3D-mesh on image
      */

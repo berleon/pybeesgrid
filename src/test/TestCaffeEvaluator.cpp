@@ -20,7 +20,7 @@ TEST_CASE("CaffeEvaluator", "") {
     CaffeEvaluator evaluator(std::move(gt_files));
     SECTION("it can read all ground truth images") {
         io::create_directories("gt_images");
-        dataset_t dataset = evaluator.getAllData();
+        dataset_t<float> dataset = evaluator.getAllData<float>();
         REQUIRE(dataset.first.size() > 100);
         for(size_t i = 0; i < dataset.first.size(); i++) {
             auto & mat = dataset.first.at(i);
@@ -28,12 +28,11 @@ TEST_CASE("CaffeEvaluator", "") {
             cv::imwrite(output_path.string(), mat);
         }
     }
-    SECTION("it can read all ground truth images") {
-        caffe::Net<float> net("testdata/test_caffe_trainer_network.prototxt", caffe::TEST);
+    SECTION("it evaluate a netork") {
+        caffe::Net<float> net("testdata/test_caffe_evaluator_network.prototxt", caffe::TEST);
         auto result = evaluator.evaluate(net);
-        REQUIRE(result.accuracy < 1. / 4096.);
+        REQUIRE(result.accuracy < 0.01);
     }
-
 }
 
 

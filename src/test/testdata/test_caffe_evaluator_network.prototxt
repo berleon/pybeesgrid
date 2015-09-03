@@ -1,4 +1,4 @@
-name: "TestCaffeTrainer"
+name: "TestCaffeEvaluator"
 layer {
   name: "data"
   type: "MemoryData"
@@ -33,17 +33,9 @@ layer {
     }
   }
 }
-layer {
-  name: "sigmoid"
-  type: "Sigmoid"
-  top: "fc"
-  bottom: "fc"
-}
-layer {
-  name: "loss"
-  type: "EuclideanLoss"
-  bottom: "fc"
-  bottom: "label"
-  top: "loss"
-}
 
+layer {
+  name: "silence_labels"
+  type: "Silence"
+  bottom: "label"
+}

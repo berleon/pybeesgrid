@@ -106,7 +106,7 @@ caffe::Datum gridToCaffeDatum(const GeneratedGrid & grid, const cv::Mat & mat) {
     datum.set_height(TAG_SIZE);
     datum.set_data(std::string(reinterpret_cast<char *>(&buf[0]),
                                buf.size()));
-    datum.set_label(grid.getLabel());
+    datum.set_label(grid.getLabelAsInt());
     datum.set_encoded(true);
     return datum;
 }
@@ -123,7 +123,8 @@ std::vector<caffe::Datum> generateData(size_t batch_size, bool greyscale) {
     return data;
 }
 
-int GeneratedGrid::getLabel() const {
+
+int GeneratedGrid::getLabelAsInt() const {
     // TODO: check how the tag is structured
     int label = 0;
     for(size_t i = 0; i < _ID.size(); i++) {
