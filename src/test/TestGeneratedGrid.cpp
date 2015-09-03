@@ -15,9 +15,10 @@ TEST_CASE("Grid is generated and drawn", "") {
     size_t rows = 10;
     size_t cols = 10;
     cv::Mat big_mat(cv::Size(size*cols, size*rows), CV_8UC3, cv::Scalar(0x40, 0x40, 0x40));
+    GridGenerator gen;
     for(size_t i = 0; i < rows; i++) {
         for(size_t j = 0; j < cols; j++) {
-            GeneratedGrid grid;
+            GeneratedGrid grid = gen.randomGrid();
             cv::Mat submat = big_mat.rowRange(i*size, (i+1)*size).colRange(j*size, (j+1)*size);
             grid.draw(submat, cv::Point2i(size/2, size/2));
         }
@@ -32,7 +33,7 @@ TEST_CASE("Grid is generated and drawn", "") {
     size_t loops = 20;
     auto start = std::chrono::system_clock::now();
     for(size_t i = 0; i < loops; i++) {
-        generateData(64);
+        generateData(64, gen);
     }
     std::chrono::duration<double> time_per_loop = (std::chrono::system_clock::now() - start) / loops;
     std::cout << "time per loop: " << time_per_loop.count() << std::endl;
