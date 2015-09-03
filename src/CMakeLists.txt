@@ -1,6 +1,6 @@
 file(GLOB src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
 file(GLOB hdr RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h)
-list(REMOVE_ITEM src "main.cpp")
+list(REMOVE_ITEM src "main.cpp"  "caffe.cpp")
 
 add_library(deepdecoder ${src} ${hdr} )
 
@@ -8,6 +8,15 @@ target_link_libraries(deepdecoder ${libs})
 
 add_executable(main "main.cpp"
      ${hdr} ${UI_RESOURCES} ${UI_HEADERS})
+
+add_executable(caffe.bin "caffe.cpp"
+        ${hdr} ${UI_RESOURCES} ${UI_HEADERS})
+
+set_target_properties(caffe.bin PROPERTIES
+        COMPILE_FLAGS "-Wno-error=sign-compare -Wno-error=pedantic"
+)
+add_definitions(-DCPU_ONLY)
+target_link_libraries(caffe.bin deepdecoder gflags)
 
 set(test-libs deepdecoder ${libs})
 add_subdirectory(test)

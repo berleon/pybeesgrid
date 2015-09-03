@@ -40,10 +40,12 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ ${CMAKE_MODULE_PATH})
 find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(Threads REQUIRED)
-find_package(Boost COMPONENTS system filesystem serialization program_options REQUIRED)
+find_package(Boost COMPONENTS system filesystem serialization python3 program_options REQUIRED)
+find_package(PythonLibs 3 REQUIRED)
 find_package(Caffe REQUIRED)
 find_package(LMDB REQUIRED)
 find_package(CUDA REQUIRED)
+find_package(gflags REQUIRED)
 
 find_program(CMAKE_MEMORYCHECK_COMMAND valgrind)
 set(CMAKE_MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full")
@@ -150,6 +152,7 @@ set(libs
     ${OpenCV_LIBS}
     ${Boost_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
+    ${PYTHON_LIBRARIES}
     ${Caffe_LIBRARIES}
     ${LMDB_LIBRARIES}
     ${CUDA_LIBRARIES}
