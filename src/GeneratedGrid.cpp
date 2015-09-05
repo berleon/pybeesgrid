@@ -85,12 +85,12 @@ cv::Scalar GeneratedGrid::tribool2Color(const boost::logic::tribool &tribool) co
     int value = 0;
     switch (tribool.value) {
         case boost::logic::tribool::value_t::true_value:
-            return _black;
+            return _white;
         case boost::logic::tribool::value_t::indeterminate_value:
             value = static_cast<int>(0.5 * 255);
             break;
         case boost::logic::tribool::value_t::false_value:
-            return _white;
+            return _black;
         default:
             assert(false);
             value = 0;
