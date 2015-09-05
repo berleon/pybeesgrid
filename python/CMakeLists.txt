@@ -1,7 +1,7 @@
 
 file(GLOB src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
 
-set(PYTHON_PKG_DIR ${CMAKE_CURRENT_BINARY_DIR}/source)
+set(PYTHON_PKG_DIR ${CMAKE_CURRENT_BINARY_DIR}/package)
 
 add_library(pydeepdecoder SHARED ${src})
 
@@ -15,9 +15,8 @@ target_link_libraries(pydeepdecoder
 )
 set_target_properties(pydeepdecoder PROPERTIES PREFIX "" )
 
-add_custom_target(python_make_pkg)
-
-add_custom_command(TARGET python_make_pkg POST_BUILD
-    DEPENDS pydeepdecoder
+add_custom_target(create_python_pkg)
+add_dependencies(create_python_pkg pydeepdecoder)
+add_custom_command(TARGET create_python_pkg POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR} ${PYTHON_PKG_DIR}
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/pydeepdecoder.so ${PYTHON_PKG_DIR}/deepdecoder/)
