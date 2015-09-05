@@ -16,12 +16,12 @@
 from . import pydeepdecoder as pydd
 
 
-def batches(gt_files, batchsize=64, repeat=False):
+def batches(gt_files, batch_size=64, repeat=False):
     gt_loader = pydd.GTDataLoader(gt_files)
     while True:
-        batch = gt_loader.batch(batchsize, repeat)
+        batch = gt_loader.batch(batch_size, repeat)
         if batch is None:
-            return
+            break
         else:
             yield batch
 

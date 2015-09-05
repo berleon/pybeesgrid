@@ -18,10 +18,10 @@ from . import pydeepdecoder as pydd
 GridGenerator = pydd.GridGenerator
 
 
-def batches(batchsize=64, generator=None):
+def batches(batch_size=64, generator=None):
     if generator is None:
         generator = GridGenerator()
     while True:
-        yield pydd.generateBatch(generator, batchsize)
+        yield pydd.generateBatch(generator, batch_size)
 
 
