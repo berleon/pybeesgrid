@@ -46,23 +46,23 @@ public:
         size_t n_total = 0;
         size_t n_right = 0;
         size_t n_false = 0;
-        for(const auto & gt_file : this->_gt_files) {
-            const auto gt_grids = this->loadGTData(gt_file);
-            const auto image = this->loadGTImage(gt_file);
-            const auto dataset = this->toDataset(gt_grids, image);
-            auto memory_layer = extractMemoryDataLayer(&net);
-            memory_layer->set_batch_size(dataset.first.size());
-            net.Reshape();
-            memory_layer->AddMatVector(dataset.first, flatten(dataset.second));
+        const size_t batch_size = 64;
+        auto memory_layer = extractMemoryDataLayer(&net);
+        memory_layer->set_batch_size(batch_size);
+        net.Reshape();
+        while(auto opt_batch = this->batch(batch_size, GTRepeat::NO_REPEAT)) {
+            const auto & batch = opt_batch.get();
+            const auto & grids = batch.first;
+            const auto & labels = batch.second;
+            memory_layer->AddMatVector(grids, flatten(labels));
             const auto pred_labels = bitsPrefilled(net);
-            for(size_t i = 0; i < dataset.second.size(); i++) {
+            for(size_t i = 0; i < labels.size(); i++) {
                 n_total++;
                 for(const auto & l: pred_labels.at(i)) {
-
                     std::cout << l << ",";
                 }
                 std::cout << std::endl;
-                if (isPredictedRight<Dtype>(pred_labels.at(i), dataset.second.at(i))) {
+                if (isPredictedRight<Dtype>(pred_labels.at(i), labels.at(i))) {
                     n_right++;
                 } else {
                     n_false++;
@@ -78,10 +78,9 @@ public:
         dataset_t<Dtype> total_dataset;
         auto &mats = total_dataset.first;
         auto & labels = total_dataset.second;
-        for(const auto & gt_file : this->_gt_files) {
-            const auto gt_grids = this->loadGTData(gt_file);
-            const auto image = this->loadGTImage(gt_file);
-            auto dataset = this->toDataset(gt_grids, image);
+        while(auto opt_dataset = this->batch(128, NO_REPEAT)) {
+            auto dataset = opt_dataset.get();
+            const auto images = dataset;
             mats.insert(mats.cbegin(), std::make_move_iterator(dataset.first.begin()),
                         std::make_move_iterator(dataset.first.end()));
 
@@ -91,29 +90,6 @@ public:
         return total_dataset;
     }
 private:
-    dataset_t<Dtype> toDataset(const std::vector<GroundTruthGridSPtr> &gt_grids,
-              const cv::Mat &image) {
-        std::vector<cv::Mat> images;
-        std::vector<std::vector<Dtype>> labels;
-        for(const auto & gt_grid : gt_grids) {
-            const auto center = gt_grid->getCenter();
-            cv::Rect box{center.x - int(TAG_SIZE / 2), center.y - int(TAG_SIZE / 2),
-                         TAG_SIZE, TAG_SIZE};
-            if(box.x > 0 && box.y > 0 && box.x + box.width < image.cols && box.y + box.height < image.rows) {
-                // TODO:: add border
-                images.emplace_back(image(box).clone());
-                std::vector<float> bits;
-                for(const auto & bit : triboolIDtoVector<Dtype>(gt_grid->getIdArray())) {
-                    bits.push_back(bit);
-                }
-                labels.push_back(bits);
-            }
-        }
-        return std::make_pair<
-                std::vector<cv::Mat>,
-                std::vector<std::vector<Dtype>>
-        >(std::move(images), std::move(labels));
-    }
     std::vector<std::vector<bool>> bitsPrefilled(caffe::Net<Dtype> &net) {
         const auto outputs = forward(net);
         std::vector<std::vector<bool>> bits_predicted;

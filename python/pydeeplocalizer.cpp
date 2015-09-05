@@ -73,8 +73,15 @@ public:
     PyGTDataLoader(bp::list pyfiles) :
             _gt_loader(pylistToVec<std::string>(pyfiles)) { };
 
-    bp::tuple batch(size_t batch_size, bool repeat) {
-        boost::optional<dataset_t<float>> opt_batch = _gt_loader.batch(batch_size, repeat);
+    bp::object batch(size_t batch_size, bool repeat) {
+        GTRepeat repeat_enum;
+        if (repeat) {
+            repeat_enum = REPEAT;
+        } else {
+            repeat_enum = NO_REPEAT;
+        }
+        boost::optional<dataset_t<float>> opt_batch = _gt_loader.batch(batch_size,
+                                                                       repeat_enum);
         if(opt_batch) {
             auto batch = opt_batch.get();
             return bp::make_tuple(
@@ -82,7 +89,7 @@ public:
                     bp::handle<>(labelsToPyArray(batch.second, batch_size))
             );
         } else {
-            return bp::make_tuple();
+            return bp::object(bp::handle<>(Py_None));
         }
     };
 
@@ -115,14 +122,13 @@ private:
             }
             ss << '\n';
         }
-        std::cout << ss.str() << std::endl;
+        // std::cout << ss.str() << std::endl;
         std::array<npy_intp, 2> labels_shape{static_cast<npy_intp>(batch_size), Grid::NUM_MIDDLE_CELLS};
         size_t labels_count = get_count<2>(labels_shape);
         float *raw_label_data = static_cast<float*>(calloc(labels_count, sizeof(float)));
         float *label_ptr = raw_label_data;
         for(auto & label : labels) {
             memcpy(label_ptr, &label[0], label.size()*sizeof(float));
-            std::cout << label_ptr << std::endl;
             label_ptr += label.size();
         }
         return newPyArrayOwnedByNumpy(labels_shape, NPY_FLOAT32, raw_label_data);

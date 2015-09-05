@@ -19,7 +19,7 @@ namespace deepdecoder {
     using dataset_t = std::pair<std::vector<cv::Mat>, std::vector<std::vector<Dtype>>>;
 
     template<typename Dtype>
-    std::vector<Dtype> triboolIDtoVector(const Grid::idarray_t id) {
+    std::vector<Dtype> triboolIDtoVector(const Grid::idarray_t & id) {
         std::vector<Dtype> id_vec;
         for(size_t i = 0; i < id.size(); i++) {
             if(id[i]) {
@@ -32,4 +32,5 @@ namespace deepdecoder {
         }
         return id_vec;
     }
+    std::string getLabelsAsString(const Grid::idarray_t & id_arr);
 }

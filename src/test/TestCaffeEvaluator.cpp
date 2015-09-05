@@ -13,9 +13,9 @@ namespace io = boost::filesystem;
 
 TEST_CASE("CaffeEvaluator", "") {
     std::vector<std::string> gt_files{
-            "testdata/Cam_0_20140804152006_3",
-            "testdata/Cam_0_20140804152006_3",
-            "testdata/Cam_0_20140804152006_3"
+            "testdata/Cam_0_20140804152006_3.tdat",
+            "testdata/Cam_0_20140804152006_3.tdat",
+            "testdata/Cam_0_20140804152006_3.tdat"
     };
     CaffeEvaluator<float> evaluator(gt_files);
     SECTION("it can read all ground truth images") {

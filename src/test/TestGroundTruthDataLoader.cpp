@@ -4,7 +4,6 @@
 #include <catch.hpp>
 #include <boost/filesystem.hpp>
 #include <opencv/highgui.h>
-#include "CaffeGridGenerator.h"
 #include <GroundTruthDataLoader.h>
 
 using namespace deepdecoder;
@@ -13,9 +12,9 @@ namespace io = boost::filesystem;
 
 TEST_CASE("CaffeEvaluator", "") {
     std::vector<std::string> gt_files{
-        "testdata/Cam_0_20140804152006_3",
-        "testdata/Cam_0_20140804152006_3",
-        "testdata/Cam_0_20140804152006_3"
+        "testdata/Cam_0_20140804152006_3.tdat",
+        "testdata/Cam_0_20140804152006_3.tdat",
+        "testdata/Cam_0_20140804152006_3.tdat"
     };
     GroundTruthDataLoader<float> data_loader(gt_files);
     size_t batch_size = 64;
@@ -34,9 +33,14 @@ TEST_CASE("CaffeEvaluator", "") {
             for(size_t j = 0; j < label.size(); j++) {
                 ss << label.at(j) << '_';
             }
-            ss << ".jpeg";
+            ss << ".png";
+            std::cout << "writing image: " << ss.str() << std::endl;
             cv::imwrite(ss.str(), mat);
         }
+    }
+    SECTION("it can return all images and labels avialable") {
+        while(data_loader.batch(batch_size).is_initialized());
+        REQUIRE(not data_loader.batch(batch_size));
     }
 }
 

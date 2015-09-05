@@ -6,58 +6,117 @@
 #include <cereal/archives/json.hpp>
 #include <biotracker/tracking/serialization/SerializationData.h>
 #include <biotracker/tracking/algorithm/BeesBook/ImgAnalysisTracker/legacy/Grid3D.h>
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
 
 namespace deepdecoder {
+
+enum GTRepeat {
+    REPEAT,
+    NO_REPEAT,
+};
 
 template<typename Dtype>
 class GroundTruthDataLoader {
 public:
     GroundTruthDataLoader(const std::vector<std::string> &gt_files)
-            : _gt_files(gt_files), _cache_idx(0), _gt_files_idx(0) {
+            : _gt_files(gt_files), _cache_idx(0), _gt_files_idx(0),
+              _frame_index(0), _gt_first_file(true) {
     }
 
-    boost::optional<dataset_t<Dtype>> batch(size_t batch_size, bool repeat = false) {
+    boost::optional<dataset_t<Dtype>> batch(
+            const size_t batch_size,
+            const GTRepeat repeat = NO_REPEAT)
+    {
         auto cache_left = [&]() { return cacheSize() - static_cast<long>(_cache_idx); };
         dataset_t<Dtype> dataset;
         auto & imgs = dataset.first;
         auto & labels = dataset.second;
-        size_t step = batch_size;
+        imgs.reserve(batch_size);
+        labels.reserve(batch_size);
         while(cache_left() < batch_size) {
             if (! fillCache(repeat)) {
-                step = cache_left();
                 break;
             }
         }
-        if(_cache_idx >= cacheSize()) {
+        if(_cache_idx + batch_size >= cacheSize()) {
             return boost::optional<dataset_t<Dtype>>();
         }
         const auto & img_begin = _img_cache.begin() + _cache_idx;
         const auto & labels_begin = _labels_cache.begin() + _cache_idx;
-        imgs.insert(imgs.end(), img_begin, img_begin + step);
-        labels.insert(labels.end(), labels_begin, labels_begin + step);
-        _cache_idx += step;
+        imgs.insert(imgs.end(), img_begin, img_begin + batch_size);
+        labels.insert(labels.end(), labels_begin, labels_begin + batch_size);
+        _cache_idx += batch_size;
         maybeCleanCache();
         return dataset;
     }
 protected:
-    std::vector<GroundTruthGridSPtr> loadGTData(const std::string &gt_path) {
-        std::ifstream is(gt_path + ".tdat");
+    using gt_grid_vec_t = std::vector<GroundTruthGridSPtr>;
+    using gt_dataset_t = std::pair<gt_grid_vec_t, cv::Mat>;
+    boost::optional<gt_dataset_t> loadNextGTData(const GTRepeat repeat) {
+        size_t n_frames = _gt_data.getFilenames().size();
+        gt_grid_vec_t grids;
+        std::string image_path;
+        if (_frame_index < n_frames) {
+            image_path = currentImageFileName();
+        } else {
+            while(_frame_index >= n_frames) {
+                if(_gt_files_idx >= _gt_files.size()) {
+                    if (! stepGTFilesIdx(repeat)) {
+                        return boost::optional<gt_dataset_t>();
+                    }
+                }
+                _gt_data = loadGTData(_gt_files.at(_gt_files_idx));
+                n_frames = _gt_data.getFilenames().size();
+                _frame_index = 0;
+                grids = std::move(getPipelineGridsForFrame(_gt_data, 0));
+
+                image_path = currentImageFileName();
+                while(_frame_index < n_frames) {
+                    if (boost::filesystem::exists(image_path)) {
+                        break;
+                    } else {
+                        LOG(INFO) << "GT Image does not exists: " << image_path;
+                        _frame_index++;
+                    }
+                }
+            }
+        }
+        auto image = loadGTImage(image_path);
+        _frame_index++;
+        return boost::make_optional<gt_dataset_t>(
+                std::make_pair<gt_grid_vec_t , cv::Mat>(std::move(grids), std::move(image)));
+    }
+    std::string currentImageFileName() {
+        auto base = _gt_data.getFilenames().at(_frame_index);
+        boost::filesystem::path gt_file = _gt_files.at(_gt_files_idx);
+        auto image_file = gt_file.remove_filename();
+        image_file.append(base + ".jpeg");
+        return boost::filesystem::absolute(image_file).string();
+    }
+    Serialization::Data loadGTData(const std::string &gt_path) {
+        std::ifstream is(gt_path);
+        CHECK(is.is_open());
         cereal::JSONInputArchive ar(is);
         Serialization::Data data;
         ar(data);
-        return getPipelineGridsForFrame(data, 0);
+        return  data;
     }
     cv::Mat loadGTImage(const std::string &gt_path) {
-        return cv::imread(gt_path + ".jpeg", CV_LOAD_IMAGE_GRAYSCALE);
+        return cv::imread(gt_path, CV_LOAD_IMAGE_GRAYSCALE);
     }
     size_t cacheSize() {
         CHECK_EQ(_img_cache.size(), _labels_cache.size());
         return _img_cache.size();
     };
-    bool stepGTFilesIdx(bool repeat) {
+    bool stepGTFilesIdx(const GTRepeat repeat) {
+        if (_gt_files_idx == 0 && _gt_first_file && _gt_files.size() > 0) {
+            _gt_first_file = false;
+            return true;
+        }
         ++_gt_files_idx;
         if(_gt_files_idx >= _gt_files.size()) {
-            if (repeat) {
+            if (repeat == REPEAT) {
                 _gt_files_idx = 0;
             } else  {
                 return false;
@@ -67,7 +126,7 @@ protected:
     }
 
     void maybeCleanCache() {
-        if (double(_cache_idx) / cacheSize() > 0.95) {
+        if (double(_cache_idx) / cacheSize() > 0.97) {
             size_t elems_to_copy = cacheSize() - static_cast<long>(_cache_idx);
             std::vector<cv::Mat> new_img_cache;
             new_img_cache.reserve(elems_to_copy);
@@ -76,18 +135,21 @@ protected:
                                  _img_cache.end());
             std::vector<std::vector<Dtype>> new_labels_cache;
             new_labels_cache.reserve(elems_to_copy);
-            new_img_cache.insert(new_img_cache.end(),
-                                 _img_cache.begin() + _cache_idx,
-                                 _img_cache.end());
+            new_labels_cache.insert(new_labels_cache.end(),
+                                 _labels_cache.begin() + _cache_idx,
+                                 _labels_cache.end());
+            _img_cache = std::move(new_img_cache);
+            _labels_cache = std::move(new_labels_cache);
             _cache_idx = 0;
         }
     }
 
-    bool fillCache(bool repeat) {
-        if (_gt_files_idx >= _gt_files.size()) { return false; }
-        const auto gt_grids = loadGTData(_gt_files.at(_gt_files_idx));
-        const auto image = loadGTImage(_gt_files.at(_gt_files_idx));
-        stepGTFilesIdx(repeat);
+    bool fillCache(const GTRepeat repeat) {
+        const auto opt_gt_dataset = loadNextGTData(repeat);
+        if (! opt_gt_dataset) { return false; }
+
+        const auto & gt_grids = opt_gt_dataset.get().first;
+        const auto & image = opt_gt_dataset.get().second;
         for(const auto & gt_grid : gt_grids) {
             const auto center = gt_grid->getCenter();
             cv::Rect box{center.x - int(TAG_SIZE / 2), center.y - int(TAG_SIZE / 2),
@@ -104,12 +166,14 @@ protected:
         }
         return true;
     }
-
+    Serialization::Data _gt_data;
     std::vector<std::string> _gt_files;
     std::vector<cv::Mat> _img_cache;
     std::vector<std::vector<Dtype>> _labels_cache;
     size_t _cache_idx;
     size_t _gt_files_idx;
+    size_t _frame_index;
+    bool _gt_first_file;
 };
 }
 

@@ -21,6 +21,7 @@ TEST_CASE("Grid is generated and drawn", "") {
             GeneratedGrid grid = gen.randomGrid();
             cv::Mat submat = big_mat.rowRange(i*size, (i+1)*size).colRange(j*size, (j+1)*size);
             grid.draw(submat, cv::Point2i(size/2, size/2));
+            cv::putText(submat, grid.getLabelsAsString(), cv::Point(5, 55), cv::FONT_HERSHEY_SIMPLEX, 0.2, cv::Scalar(255));
         }
     }
     # ifdef VISUAL_TEST

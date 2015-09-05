@@ -26,6 +26,9 @@ public:
     std::vector<Dtype> getLabelAsVector() const {
         return triboolIDtoVector<Dtype>(_ID);
     }
+    inline std::string getLabelsAsString() const {
+        return deepdecoder::getLabelsAsString(_ID);
+    }
     /**
      * draws 2D projection of 3D-mesh on image
      */
