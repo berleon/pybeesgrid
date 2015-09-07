@@ -34,15 +34,25 @@ PyObject * newPyArrayOwnedByNumpy(shape_t<N> shape, int type, void * data) {
     PyArray_ENABLEFLAGS(pyArr, NPY_ARRAY_OWNDATA);
     return pyObj;
 }
+void setGridParams(const GeneratedGrid & grid, double * &ptr) {
+    *ptr = grid.getZRotation(); ++ptr;
+    *ptr = grid.getYRotation(); ++ptr;
+    *ptr = grid.getXRotation(); ++ptr;
+    *ptr = grid.getCenter().x; ++ptr;
+    *ptr = grid.getCenter().y; ++ptr;
+    *ptr = grid.getRadius(); ++ptr;
+}
 bp::tuple generateBatch(GridGenerator & gen, size_t batch_size) {
     const shape4d_t shape{static_cast<npy_intp>(batch_size), 1, TAG_SIZE, TAG_SIZE};
-    const size_t count = get_count(shape);
-    const size_t labels_count = get_count(shape);
     std::array<npy_intp, 2> labels_shape{static_cast<npy_intp>(batch_size), Grid::NUM_MIDDLE_CELLS};
-
-    uchar *raw_data = static_cast<uchar*>(calloc(count, sizeof(uchar)));
-    float *raw_labels = static_cast<float*>(calloc(labels_count, sizeof(float)));
+    static const size_t n_params = 6;
+    std::array<npy_intp, 2> grid_params_shape{static_cast<npy_intp>(batch_size), n_params};
+    uchar *raw_data = static_cast<uchar*>(calloc(get_count(shape), sizeof(uchar)));
+    float *raw_labels = static_cast<float*>(calloc(get_count(labels_shape), sizeof(float)));
+    double *raw_grid_params = static_cast<double*>(
+            calloc(get_count(grid_params_shape), sizeof(double)));
     float *label_ptr = raw_labels;
+    double *grid_params_ptr = raw_grid_params;
     for(size_t i = 0; i < batch_size; i++) {
         GeneratedGrid gg = gen.randomGrid();
         cv::Mat mat(TAG_SIZE, TAG_SIZE, CV_8UC1, raw_data + i*TAG_PIXELS);
@@ -51,10 +61,12 @@ bp::tuple generateBatch(GridGenerator & gen, size_t batch_size) {
         memcpy(label_ptr, &label[0], label.size()*sizeof(float));
         label_ptr += label.size();
         CHECK(mat.refcount == nullptr);
+        setGridParams(gg, grid_params_ptr);
     }
     return bp::make_tuple(
             bp::handle<>(newPyArrayOwnedByNumpy(shape, NPY_UBYTE, raw_data)),
-            bp::handle<>(newPyArrayOwnedByNumpy(labels_shape, NPY_FLOAT, raw_labels))
+            bp::handle<>(newPyArrayOwnedByNumpy(labels_shape, NPY_FLOAT, raw_labels)),
+            bp::handle<>(newPyArrayOwnedByNumpy(grid_params_shape, NPY_DOUBLE, raw_grid_params))
     );
 }
 
@@ -151,11 +163,12 @@ BOOST_PYTHON_MODULE(pydeepdecoder)
     bp::def("generateBatch", generateBatch);
 
     bp::class_<GridGenerator>("GridGenerator")
-        .def("setWhite", &GridGenerator::setWhite)
-        .def("setBlack", &GridGenerator::setBlack)
-        .def("setBackground", &GridGenerator::setBackground)
-        .def("setAngle", &GridGenerator::setAngle)
-        .def("setZAngle", &GridGenerator::setZAngle);
+            .def("setWhite", &GridGenerator::setWhite)
+            .def("setBlack", &GridGenerator::setBlack)
+            .def("setBackground", &GridGenerator::setBackground)
+            .def("setYawAngle", &GridGenerator::setYawAngle)
+            .def("setPitchAngle", &GridGenerator::setPitchAngle)
+            .def("setRollAngle", &GridGenerator::setRollAngle);
 
     bp::class_<PyGTDataLoader>("GTDataLoader", bp::init<bp::list>())
         .def("batch", &PyGTDataLoader::batch);
