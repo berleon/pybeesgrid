@@ -3,14 +3,19 @@
 #include <caffe/util/io.hpp>
 namespace deepdecoder {
 
-GridGenerator::GridGenerator() : _re(long(time(0))) {
-    setAngle(0., 2*M_PI*(60./360.));
-    setZAngle(0., 2*M_PI);
-    setWhite(0x80, 0xa0);
-    setBlack(0x20, 0x40);
+constexpr double to_radian(double degrees) {
+    return (M_PI / 180) * degrees;
+}
+GridGenerator::GridGenerator() : _re(long(time(0)))
+{
+    setYawAngle(0., 2 * M_PI);
+    setPitchAngle(to_radian(-30), to_radian(65));
+    setRollAngle(to_radian(-10), to_radian(10));
+    setWhite(0x40, 0x60);
+    setBlack(0x1F, 0x30);
     setBackground(0x38, 0x48);
-    setGaussianBlur(2, 8);
-    _coin_dis = std::bernoulli_distribution(0.5);
+    setCenter(0, 3);
+    setGaussianBlurStd(1.2, 1.8);
 }
 
 Grid::idarray_t GridGenerator::generateID() {
@@ -22,25 +27,27 @@ Grid::idarray_t GridGenerator::generateID() {
 }
 
 GeneratedGrid GridGenerator::randomGrid()  {
-    int b = _black_dis(_re);
-    int w = _white_dis(_re);
+    int b = _Black_dis(_re);
+    int w = _White_dis(_re);
     Grid::idarray_t id = generateID();
     cv::Scalar black = cv::Scalar(b, b, b);
     cv::Scalar white = cv::Scalar(w, w, w);
-    double angle_x = _angle_dis(_re);
-    double angle_y = _angle_dis(_re);
-    double angle_z = _z_angle_dis(_re);
-    long background_color = _background_dis(_re);
-    double gaussian_blur = _gaussian_blur_dis(_re);
-    return GeneratedGrid(id, black, white, angle_x, angle_y, angle_z,
-                         background_color, gaussian_blur);
-}
+    double angle_z = _YawAngle_dis(_re);
+    double angle_y = _PitchAngle_dis(_re);
+    double angle_x = _RollAngle_dis(_re);
+    double gaussian_blur = _GaussianBlurStd_dis(_re);
 
-GeneratedGrid::GeneratedGrid(Grid::idarray_t id, cv::Scalar black, cv::Scalar white,
+    GridBackground background{};
+    auto center_cords = [&]() { return int(round(_Center_dis(_re))); };
+    cv::Point2i center{center_cords(), center_cords()};
+    return GeneratedGrid(center, id, black, white, angle_x, angle_y, angle_z,
+                         gaussian_blur, background);
+}
+GeneratedGrid::GeneratedGrid(cv::Point2i center, Grid::idarray_t id, cv::Scalar black, cv::Scalar white,
                              double angle_x, double angle_y, double angle_z,
-                             long background_color, double gaussian_blur) :
-        Grid(cv::Point2i(0, 0), RADIUS, angle_z, angle_y, angle_x), _black(black), _white(white),
-         _background_color(background_color), _gaussian_blur(gaussian_blur)
+                             double gaussian_blur, GridBackground background) :
+        Grid(center, RADIUS, angle_z, angle_y, angle_x), _black(black), _white(white),
+          _gaussian_blur(gaussian_blur), _background(background)
 {
     _ID = id;
     prepare_visualization_data();
@@ -77,7 +84,7 @@ void GeneratedGrid::draw(cv::Mat &img, const cv::Point &center) const {
     }
     cv::fillConvexPoly(img, inner_white_semicircle, _white);
     cv::fillConvexPoly(img, inner_black_semicircle, _black);
-    cv::GaussianBlur(img, img, cv::Size(_gaussian_blur_ks, _gaussian_blur_ks), _gaussian_blur);
+    // cv::GaussianBlur(img, img, cv::Size(_gaussian_blur_ks, _gaussian_blur_ks), _gaussian_blur);
 }
 
 cv::Scalar GeneratedGrid::tribool2Color(const boost::logic::tribool &tribool) const
@@ -138,7 +145,7 @@ int GeneratedGrid::getLabelAsInt() const {
 }
 
 cv::Mat GeneratedGrid::cvMat() const {
-    cv::Mat mat(TAG_SIZE, TAG_SIZE, CV_8U, _background_color);
+    cv::Mat mat(TAG_SIZE, TAG_SIZE, CV_8U, cv::Scalar(0));
     draw(mat, cv::Point2i(TAG_SIZE/2, TAG_SIZE/2));
     return mat;
 }

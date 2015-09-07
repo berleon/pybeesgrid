@@ -1,10 +1,10 @@
 
 #pragma once
 
-#include <vector>                  // std::vector
-#include <array>                   // std::array
-#include <opencv2/opencv.hpp>      // cv::Mat, cv::Point3_
-#include <boost/logic/tribool.hpp> // boost::tribool
+#include <vector>
+#include <array>
+#include <opencv2/opencv.hpp>
+#include <boost/logic/tribool.hpp>
 
 #include <bits/unique_ptr.h>
 #include <caffe/proto/caffe.pb.h>
@@ -14,6 +14,27 @@
 
 namespace deepdecoder {
 class GridGenerator;
+
+struct RBF {
+    cv::Point center;
+    long intensity;
+    cv::Point2f std;
+    double correlation;
+
+    double operator()(long x, long y) {
+        const double x_term = (x - center.x) / std.x;
+        const double y_term = (y - center.y) / std.y;
+        double p_ = correlation;
+        double exponent = - 0.5/ (1 - std::pow(p_, 2)) *
+                (std::pow(x_term, 2) + std::pow(y_term, 2) + 2*p_ * x_term * y_term);
+        return intensity * 0.5 / (M_PI * std.x * std.y * sqrt(1 - std::pow(p_, 2))) * exp(exponent);
+    }
+};
+
+struct GridBackground {
+    long background_color;
+    std::vector<RBF> rbfs;
+};
 
 class GeneratedGrid : public Grid {
 public:
@@ -36,70 +57,61 @@ public:
     cv::Mat cvMat() const;
     friend class GridGenerator;
 protected:
-    explicit GeneratedGrid(Grid::idarray_t id, cv::Scalar black, cv::Scalar white,
+    explicit GeneratedGrid(cv::Point2i center, Grid::idarray_t id, cv::Scalar black, cv::Scalar white,
                            double angle_x, double angle_y, double angle_z,
-                           long background_color, double gaussian_blur);
+                           double gaussian_blur, GridBackground background);
 private:
     static const size_t _gaussian_blur_ks = 7;
     cv::Scalar _black;
     cv::Scalar _white;
-    cv::Scalar _background_color;
     double _gaussian_blur;
+    GridBackground _background;
     cv::Scalar tribool2Color(const boost::logic::tribool &tribool) const;
 };
 
+#define DISTRIBUTION_MEMBER(NAME, DISTRIBUTION_T, TYPE) \
+public:\
+    inline void set##NAME(TYPE begin, TYPE end) { \
+        _##NAME = std::make_pair(begin, end); \
+        _##NAME##_dis = DISTRIBUTION_T(begin, end); \
+    } \
+    inline std::pair<TYPE, TYPE> get##NAME() const { \
+        return _##NAME; \
+    }; \
+private: \
+    std::pair<TYPE, TYPE> _##NAME; \
+    DISTRIBUTION_T _##NAME##_dis;
+
+#define UNIFORM_INT_DISTRIBUTION_MEMBER(NAME) DISTRIBUTION_MEMBER( NAME, std::uniform_int_distribution<>, long)
+#define UNIFORM_REAL_DISTRIBUTION_MEMBER(NAME) DISTRIBUTION_MEMBER(NAME, std::uniform_real_distribution<>, double)
+#define NORMAL_DISTRIBUTION_MEMBER(NAME) DISTRIBUTION_MEMBER(NAME, std::normal_distribution<>, double)
 
 class GridGenerator {
 public:
     GridGenerator();
 
-    inline void setAngle(double begin, double end) {
-        _angle = std::make_pair(begin, end);
-        _angle_dis = std::uniform_real_distribution<>(begin, end);
-    }
-
-    inline void setZAngle(double begin, double end) {
-        _z_angle = std::make_pair(begin, end);
-        _z_angle_dis = std::uniform_real_distribution<>(begin, end);
-    }
-
-    inline void setWhite(int begin, int end) {
-        _white = std::make_pair(begin, end);
-        _white_dis = std::uniform_int_distribution<>(begin, end);
-    }
-
-    inline void setBlack(int begin, int end) {
-        _black = std::make_pair(begin, end);
-        _black_dis = std::uniform_int_distribution<>(begin, end);
-    }
-
-    inline void setBackground(int begin, int end) {
-        _background = std::make_pair(begin, end);
-        _background_dis = std::uniform_int_distribution<>(begin, end);
-    }
-
-    inline void setGaussianBlur(double begin, double end) {
-        _gaussian_blur = std::make_pair(begin, end);
-        _gaussian_blur_dis = std::uniform_real_distribution<>(begin, end);
+    inline void setReflectionSpotProb(const double prob) {
+        _reflection_spot_prob = prob;
+        _reflection_spot_dis = std::bernoulli_distribution(prob);
     }
 
     GeneratedGrid randomGrid();
+    UNIFORM_REAL_DISTRIBUTION_MEMBER(YawAngle)
+    UNIFORM_REAL_DISTRIBUTION_MEMBER(PitchAngle)
+    UNIFORM_REAL_DISTRIBUTION_MEMBER(RollAngle)
+    UNIFORM_REAL_DISTRIBUTION_MEMBER(GaussianBlurStd)
+    UNIFORM_INT_DISTRIBUTION_MEMBER(White)
+    UNIFORM_INT_DISTRIBUTION_MEMBER(Black)
+    UNIFORM_INT_DISTRIBUTION_MEMBER(Background)
+    NORMAL_DISTRIBUTION_MEMBER(Center)
 private:
     Grid::idarray_t generateID();
-    std::pair<double, double> _z_angle;
-    std::pair<double, double> _angle;
-    std::pair<double, double> _gaussian_blur;
-    std::pair<int, int> _white;
-    std::pair<int, int> _black;
-    std::pair<int, int> _background;
+    double _reflection_spot_prob;
+
 
     std::mt19937_64 _re;
-    std::uniform_real_distribution<> _angle_dis;
-    std::uniform_real_distribution<> _z_angle_dis;
-    std::uniform_int_distribution<>  _white_dis;
-    std::uniform_int_distribution<>  _black_dis;
-    std::uniform_int_distribution<>  _background_dis;
-    std::uniform_real_distribution<> _gaussian_blur_dis;
+    std::bernoulli_distribution _reflection_spot_dis;
+
     std::bernoulli_distribution _coin_dis;
 };
 
