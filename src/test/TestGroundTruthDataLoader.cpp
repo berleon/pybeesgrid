@@ -17,29 +17,66 @@ TEST_CASE("CaffeEvaluator", "") {
         "testdata/Cam_0_20140804152006_3.tdat"
     };
     GroundTruthDataLoader<float> data_loader(gt_files);
-    size_t batch_size = 64;
+    size_t rows = 10;
+    size_t cols = 10;
+    size_t batch_size = rows*cols;
     SECTION("it returns images and labels as batches") {
         io::remove_all("gt_loader_images");
         io::create_directories("gt_loader_images");
         dataset_t<float> batch = data_loader.batch(batch_size).get();
         REQUIRE(batch.first.size() == batch_size);
         REQUIRE(batch.second.size() == batch_size);
-
-        for(size_t i = 0; i < batch.first.size(); i++) {
-            auto & mat = batch.first.at(i);
-            auto & label = batch.second.at(i);
-            std::stringstream ss;
-            ss << "gt_loader_images/";
-            for(size_t j = 0; j < label.size(); j++) {
-                ss << label.at(j) << '_';
+        cv::Mat big_image(rows*TAG_SIZE+rows-1, cols*TAG_SIZE+rows-1,
+                          CV_8U, cv::Scalar(0xff));
+        for(size_t r = 0; r < rows; r++) {
+            for(size_t c = 0; c < cols; c++) {
+                size_t i = r*rows + c;
+                auto & mat = batch.first.at(i);
+                auto & label = batch.second.at(i);
+                std::stringstream ss;
+                ss << "gt_loader_images/";
+                for(size_t j = 0; j < label.size(); j++) {
+                    ss << label.at(j) << '_';
+                }
+                ss << ".png";
+                cv::imwrite(ss.str(), mat);
+                size_t r_start = r*TAG_SIZE + r;
+                size_t c_start = c*TAG_SIZE + c;
+                cv::Mat subimage = big_image.rowRange(r_start, r_start+TAG_SIZE)
+                        .colRange(c_start, c_start + TAG_SIZE);
+                mat.copyTo(subimage);
             }
-            ss << ".png";
-            std::cout << "writing image: " << ss.str() << std::endl;
-            cv::imwrite(ss.str(), mat);
         }
+        cv::imwrite("ground_truth_images.png", big_image);
     }
     SECTION("it can return all images and labels avialable") {
-        while(data_loader.batch(batch_size).is_initialized());
+        size_t rows = 25;
+        size_t cols = 25;
+        cv::Mat big_image(rows*TAG_SIZE+rows-1, cols*TAG_SIZE+rows-1,
+                          CV_8U, cv::Scalar(0x0));
+
+        size_t i = 0;
+        size_t r = 0;
+        size_t c = 0;
+        while(auto batch = data_loader.batch(batch_size)) {
+            for(const auto & mat : batch.get().first) {
+                if(i % 2 == 0 && r < rows) {
+                    size_t r_start = r*TAG_SIZE + r;
+                    size_t c_start = c*TAG_SIZE + c;
+                    cv::Mat subimage = big_image.rowRange(r_start, r_start+TAG_SIZE)
+                            .colRange(c_start, c_start + TAG_SIZE);
+                    mat.copyTo(subimage);
+                    c++;
+                    if(c == cols) {
+                        r++;
+                        c = 0;
+                    }
+                }
+                i++;
+            }
+        }
+        std::cout << i << std::endl;
+        cv::imwrite("ground_truth_images_big.png", big_image);
         REQUIRE(not data_loader.batch(batch_size));
     }
 }
