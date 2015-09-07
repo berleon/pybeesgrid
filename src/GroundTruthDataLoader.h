@@ -55,35 +55,35 @@ protected:
     using gt_dataset_t = std::pair<gt_grid_vec_t, cv::Mat>;
     boost::optional<gt_dataset_t> loadNextGTData(const GTRepeat repeat) {
         size_t n_frames = _gt_data.getFilenames().size();
-        gt_grid_vec_t grids;
         std::string image_path;
-        if (_frame_index < n_frames) {
-            image_path = currentImageFileName();
-        } else {
-            while(_frame_index >= n_frames) {
-                if(_gt_files_idx >= _gt_files.size()) {
-                    if (! stepGTFilesIdx(repeat)) {
+        gt_grid_vec_t grids;
+        cv::Mat image;
+        do {
+            if (_frame_index < n_frames) {
+                image_path = currentImageFileName();
+            }
+            if (!boost::filesystem::exists(image_path) ||
+                    _frame_index >= n_frames ) {
+                while (_frame_index >= n_frames ||
+                       !boost::filesystem::exists(image_path)) {
+                    if (_frame_index >= n_frames && !stepGTFilesIdx(repeat)) {
                         return boost::optional<gt_dataset_t>();
                     }
-                }
-                _gt_data = loadGTData(_gt_files.at(_gt_files_idx));
-                n_frames = _gt_data.getFilenames().size();
-                _frame_index = 0;
-                grids = std::move(getPipelineGridsForFrame(_gt_data, 0));
-
-                image_path = currentImageFileName();
-                while(_frame_index < n_frames) {
-                    if (boost::filesystem::exists(image_path)) {
-                        break;
-                    } else {
+                    _gt_data = loadGTData(_gt_files.at(_gt_files_idx));
+                    n_frames = _gt_data.getFilenames().size();
+                    _frame_index = 0;
+                    image_path = currentImageFileName();
+                    if (!boost::filesystem::exists(image_path)) {
                         LOG(INFO) << "GT Image does not exists: " << image_path;
                         _frame_index++;
                     }
                 }
             }
-        }
-        auto image = loadGTImage(image_path);
-        _frame_index++;
+            grids = getPipelineGridsForFrame(_gt_data, _frame_index);
+            image = loadGTImage(image_path);
+            _frame_index++;
+        } while(grids.size() == 0);
+        std::cout << "with " << grids.size() << " grids" << std::endl;
         return boost::make_optional<gt_dataset_t>(
                 std::make_pair<gt_grid_vec_t , cv::Mat>(std::move(grids), std::move(image)));
     }
@@ -103,6 +103,7 @@ protected:
         return  data;
     }
     cv::Mat loadGTImage(const std::string &gt_path) {
+        std::cout << "loading image: " << gt_path << std::endl;
         return cv::imread(gt_path, CV_LOAD_IMAGE_GRAYSCALE);
     }
     size_t cacheSize() {
