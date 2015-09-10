@@ -16,13 +16,16 @@
 from . import pydeepdecoder as pydd
 
 GridGenerator = pydd.GridGenerator
+BadGridArtist = pydd.BadGridArtist
+MaskGridArtist = pydd.MaskGridArtist
 
-
-def batches(batch_size=64, generator=None, with_gird_params=False):
+def batches(batch_size=64, generator=None, with_gird_params=False, artist=None):
     if generator is None:
         generator = GridGenerator()
+    if artist is None:
+        artist  = BadGridArtist();
     while True:
-        batch = pydd.generateBatch(generator, batch_size)
+        batch = pydd.generateBatch(generator, artist, batch_size)
         if with_gird_params:
             yield batch
         else:

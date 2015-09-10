@@ -13,29 +13,22 @@ namespace deepdecoder {
 
 
 template<typename Dtype>
-void generateGridDataset(size_t batch_size,
-                         GridGenerator & gen,
-                         std::vector<cv::Mat> * mats,
-                         std::vector<Dtype> * labels) {
-    for(size_t i = 0; i < batch_size; i++) {
-        GeneratedGrid gg = gen.randomGrid();
-        mats->emplace_back(gg.cvMat());
-        for(const auto & label: gg.getLabelAsVector<Dtype>()) {
-            labels->push_back(label);
-        }
-    }
-}
-
-template<typename Dtype>
 class CaffeGridGenerator : public caffe::MemoryDataLayer<Dtype>::MatGenerator {
 public:
     explicit CaffeGridGenerator() { }
     virtual ~CaffeGridGenerator() = default;
     virtual void generate(int batch_size, std::vector<cv::Mat> * mats, std::vector<Dtype> * labels) {
-        return generateGridDataset(batch_size, _gen, mats, labels);
+        for(int i = 0; i < batch_size; i++) {
+            GeneratedGrid gg = _gen.randomGrid();
+            mats->emplace_back(_artist.draw(gg));
+            for(const auto & label: gg.getLabelAsVector<Dtype>()) {
+                labels->push_back(label);
+            }
+        }
     }
 private:
     GridGenerator _gen;
+    BadGridArtist _artist;
 };
 
 template<typename Dtype>

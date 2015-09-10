@@ -42,7 +42,7 @@ void setGridParams(const GeneratedGrid & grid, double * &ptr) {
     *ptr = grid.getCenter().y; ++ptr;
     *ptr = grid.getRadius(); ++ptr;
 }
-bp::tuple generateBatch(GridGenerator & gen, size_t batch_size) {
+bp::tuple generateBatch(GridGenerator & gen, GridArtist & artist, size_t batch_size) {
     const shape4d_t shape{static_cast<npy_intp>(batch_size), 1, TAG_SIZE, TAG_SIZE};
     std::array<npy_intp, 2> labels_shape{static_cast<npy_intp>(batch_size), Grid::NUM_MIDDLE_CELLS};
     static const size_t n_params = 6;
@@ -56,7 +56,7 @@ bp::tuple generateBatch(GridGenerator & gen, size_t batch_size) {
     for(size_t i = 0; i < batch_size; i++) {
         GeneratedGrid gg = gen.randomGrid();
         cv::Mat mat(TAG_SIZE, TAG_SIZE, CV_8UC1, raw_data + i*TAG_PIXELS);
-        gg.draw(mat, TAG_CENTER);
+        artist.draw(gg, mat);
         auto label = gg.getLabelAsVector<float>();
         memcpy(label_ptr, &label[0], label.size()*sizeof(float));
         label_ptr += label.size();
@@ -149,13 +149,11 @@ private:
     GroundTruthDataLoader<float> _gt_loader;
 };
 
-
 void * init_numpy() {
     bp::numeric::array::set_module_and_type("numpy", "ndarray");
     import_array();
     return NULL;
 }
-template class GroundTruthDataLoader<float>;
 
 BOOST_PYTHON_MODULE(pydeepdecoder)
 {
@@ -163,14 +161,21 @@ BOOST_PYTHON_MODULE(pydeepdecoder)
     bp::def("generateBatch", generateBatch);
 
     bp::class_<GridGenerator>("GridGenerator")
-            .def("setWhite", &GridGenerator::setWhite)
-            .def("setBlack", &GridGenerator::setBlack)
-            .def("setBackground", &GridGenerator::setBackground)
             .def("setYawAngle", &GridGenerator::setYawAngle)
             .def("setPitchAngle", &GridGenerator::setPitchAngle)
-            .def("setRollAngle", &GridGenerator::setRollAngle);
+            .def("setRollAngle", &GridGenerator::setRollAngle)
+            .def("setCenter", &GridGenerator::setCenter);
+
+    bp::class_<GridArtist, boost::noncopyable>("BadGridArtist", bp::no_init);
+
+    bp::class_<BadGridArtist, bp::bases<GridArtist>>("BadGridArtist")
+            .def("setWhite", &BadGridArtist::setWhite)
+            .def("setBlack", &BadGridArtist::setBlack)
+            .def("setBackground", &BadGridArtist::setBackground);
+
+    bp::class_<MaskGridArtist, bp::bases<GridArtist>>("MaskGridArtist");
 
     bp::class_<PyGTDataLoader>("GTDataLoader", bp::init<bp::list>())
-        .def("batch", &PyGTDataLoader::batch);
+            .def("batch", &PyGTDataLoader::batch);
 }
 

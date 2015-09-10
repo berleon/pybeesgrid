@@ -11,11 +11,7 @@ GridGenerator::GridGenerator() : _re(long(time(0)))
     setYawAngle(0., 2 * M_PI);
     setPitchAngle(to_radian(-30), to_radian(65));
     setRollAngle(to_radian(-10), to_radian(10));
-    setWhite(0x40, 0x60);
-    setBlack(0x1F, 0x30);
-    setBackground(0x38, 0x48);
     setCenter(0, 3);
-    setGaussianBlurStd(1.2, 1.8);
 }
 
 Grid::idarray_t GridGenerator::generateID() {
@@ -27,27 +23,18 @@ Grid::idarray_t GridGenerator::generateID() {
 }
 
 GeneratedGrid GridGenerator::randomGrid()  {
-    int b = _Black_dis(_re);
-    int w = _White_dis(_re);
     Grid::idarray_t id = generateID();
-    cv::Scalar black = cv::Scalar(b, b, b);
-    cv::Scalar white = cv::Scalar(w, w, w);
     double angle_z = _YawAngle_dis(_re);
     double angle_y = _PitchAngle_dis(_re);
     double angle_x = _RollAngle_dis(_re);
-    double gaussian_blur = _GaussianBlurStd_dis(_re);
 
-    GridBackground background{};
     auto center_cords = [&]() { return int(round(_Center_dis(_re))); };
     cv::Point2i center{center_cords(), center_cords()};
-    return GeneratedGrid(center, id, black, white, angle_x, angle_y, angle_z,
-                         gaussian_blur, background);
+    return GeneratedGrid(center, id, angle_x, angle_y, angle_z);
 }
-GeneratedGrid::GeneratedGrid(cv::Point2i center, Grid::idarray_t id, cv::Scalar black, cv::Scalar white,
-                             double angle_x, double angle_y, double angle_z,
-                             double gaussian_blur, GridBackground background) :
-        Grid(center, RADIUS, angle_z, angle_y, angle_x), _black(black), _white(white),
-          _gaussian_blur(gaussian_blur), _background(background)
+GeneratedGrid::GeneratedGrid(cv::Point2i center, Grid::idarray_t id,
+                             double angle_x, double angle_y, double angle_z) :
+        Grid(center, RADIUS, angle_z, angle_y, angle_x)
 {
     _ID = id;
     prepare_visualization_data();
@@ -64,47 +51,7 @@ std::vector<cv::Point> translate(const std::vector<cv::Point> points, const cv::
     }
     return translated_pts;
 }
-/**
- * draws the tag at position center in image dst
- *
- * @param img dst
- * @param center center of the tag
- */
-void GeneratedGrid::draw(cv::Mat &img, const cv::Point &center) const {
-    const auto outer_white_ring = translate(_coordinates2D.at(INDEX_OUTER_WHITE_RING), center);
-    const auto inner_white_semicircle = translate(_coordinates2D.at(INDEX_INNER_WHITE_SEMICIRCLE), center);
-    const auto inner_black_semicircle = translate(_coordinates2D.at(INDEX_INNER_BLACK_SEMICIRCLE), center);
 
-    cv::fillConvexPoly(img, outer_white_ring, _white);
-    for (size_t i = INDEX_MIDDLE_CELLS_BEGIN; i < INDEX_MIDDLE_CELLS_BEGIN + NUM_MIDDLE_CELLS; ++i)
-    {
-        const auto cell = translate(_coordinates2D.at(i), center);
-        cv::Scalar color = tribool2Color(_ID[i - INDEX_MIDDLE_CELLS_BEGIN]);
-        cv::fillConvexPoly(img, cell, color);
-    }
-    cv::fillConvexPoly(img, inner_white_semicircle, _white);
-    cv::fillConvexPoly(img, inner_black_semicircle, _black);
-    // cv::GaussianBlur(img, img, cv::Size(_gaussian_blur_ks, _gaussian_blur_ks), _gaussian_blur);
-}
-
-cv::Scalar GeneratedGrid::tribool2Color(const boost::logic::tribool &tribool) const
-{
-    int value = 0;
-    switch (tribool.value) {
-        case boost::logic::tribool::value_t::true_value:
-            return _white;
-        case boost::logic::tribool::value_t::indeterminate_value:
-            value = static_cast<int>(0.5 * 255);
-            break;
-        case boost::logic::tribool::value_t::false_value:
-            return _black;
-        default:
-            assert(false);
-            value = 0;
-            break;
-    }
-    return cv::Scalar(value, value, value);
-}
 
 caffe::Datum gridToCaffeDatum(const GeneratedGrid & grid, const cv::Mat & mat) {
     caffe::Datum datum;
@@ -123,10 +70,11 @@ caffe::Datum gridToCaffeDatum(const GeneratedGrid & grid, const cv::Mat & mat) {
 std::vector<caffe::Datum> generateData(size_t batch_size, GridGenerator & gen, bool greyscale) {
     int type = greyscale ? CV_8U : CV_8UC3;
     std::vector<caffe::Datum> data(batch_size);
+    BadGridArtist drawer;
     for(size_t i = 0; i < batch_size; i++) {
         GeneratedGrid grid = gen.randomGrid();
         cv::Mat mat(cv::Size(TAG_SIZE, TAG_SIZE), type);
-        grid.draw(mat, cv::Point(TAG_SIZE/2, TAG_SIZE/2));
+        drawer.draw(grid, mat, cv::Point(TAG_SIZE/2, TAG_SIZE/2));
         data.emplace_back(gridToCaffeDatum(grid, mat));
     }
     return data;
@@ -144,10 +92,90 @@ int GeneratedGrid::getLabelAsInt() const {
     return label;
 }
 
-cv::Mat GeneratedGrid::cvMat() const {
-    cv::Mat mat(TAG_SIZE, TAG_SIZE, CV_8U, cv::Scalar(0));
-    draw(mat, cv::Point2i(TAG_SIZE/2, TAG_SIZE/2));
-    return mat;
-}
+
+BadGridArtist::BadGridArtist()
+{
+    setWhite(0x40, 0x60);
+    setBlack(0x1F, 0x30);
+    setBackground(0x38, 0x48);
+    setGaussianBlurStd(1.2, 1.8);
 }
 
+
+void MaskGridArtist::_draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2i center)
+{
+    auto & coords2d = grid.getCoordinates2D();
+    img.setTo(MASK::IGNORE);
+    const auto outer_white_ring = translate(coords2d.at(Grid::INDEX_OUTER_WHITE_RING), center);
+    const auto inner_white_semicircle = translate(coords2d.at(Grid::INDEX_INNER_WHITE_SEMICIRCLE), center);
+    const auto inner_black_semicircle = translate(coords2d.at(Grid::INDEX_INNER_BLACK_SEMICIRCLE), center);
+
+    cv::fillConvexPoly(img, outer_white_ring, MASK::OUTER_WHITE_RING);
+    const auto max_i = Grid::INDEX_MIDDLE_CELLS_BEGIN + Grid::NUM_MIDDLE_CELLS;
+    for (size_t i = Grid::INDEX_MIDDLE_CELLS_BEGIN; i < max_i; ++i)
+    {
+        const auto cell = translate(coords2d.at(i), center);
+        cv::Scalar color = MaskGridArtist::maskForTribool(i, grid.getIdArray().at(i - Grid::INDEX_MIDDLE_CELLS_BEGIN));
+        cv::fillConvexPoly(img, cell, color);
+    }
+    cv::fillConvexPoly(img, inner_white_semicircle, MASK::INNER_WHITE_SEMICIRCLE);
+    cv::fillConvexPoly(img, inner_black_semicircle, MASK::INNER_BLACK_SEMICIRCLE);
+}
+
+unsigned char MaskGridArtist::maskForTribool(size_t cell_idx, boost::logic::tribool cell_value)
+{
+    if(cell_value) {
+        return MASK::CELL_0_WHITE + cell_idx;
+    } else if(!cell_value) {
+        return MASK::CELL_0_BLACK + cell_idx;
+    } else {
+        throw "GridMaskDrawer cannot handle indeterminate value";
+    }
+}
+
+cv::Scalar BadGridArtist::pickColorForTribool(const boost::logic::tribool &tribool,
+                                              int black, int white) const
+{
+    int value = 0;
+    if(tribool) {
+        value = white;
+    } else if(!tribool) {
+        value = black;
+    } else {
+        throw "pickColorForTribool cannot handle indeterminate value.";
+    }
+    return cv::Scalar(value, value, value);
+}
+
+void BadGridArtist::_draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2i center)
+{
+
+    int black = _Black_dis(_re);
+    int white = _White_dis(_re);
+    double gaussian_blur = _GaussianBlurStd_dis(_re);
+    GridBackground background{};
+    const auto & coords2D = grid.getCoordinates2D();
+    const auto outer_white_ring = translate(coords2D.at(Grid::INDEX_OUTER_WHITE_RING), center);
+    const auto inner_white_semicircle = translate(coords2D.at(Grid::INDEX_INNER_WHITE_SEMICIRCLE), center);
+    const auto inner_black_semicircle = translate(coords2D.at(Grid::INDEX_INNER_BLACK_SEMICIRCLE), center);
+
+    cv::fillConvexPoly(img, outer_white_ring, white);
+    for (size_t i = Grid::INDEX_MIDDLE_CELLS_BEGIN; i < Grid::INDEX_MIDDLE_CELLS_BEGIN + Grid::NUM_MIDDLE_CELLS; ++i)
+    {
+        const auto cell = translate(coords2D.at(i), center);
+        cv::Scalar color = BadGridArtist::pickColorForTribool(
+                    grid.getIdArray()[i - Grid::INDEX_MIDDLE_CELLS_BEGIN], black, white);
+        cv::fillConvexPoly(img, cell, color);
+    }
+    cv::fillConvexPoly(img, inner_white_semicircle, white);
+    cv::fillConvexPoly(img, inner_black_semicircle, black);
+}
+
+cv::Mat GridArtist::draw(const GeneratedGrid &grid)
+{
+    cv::Mat mat(TAG_SIZE, TAG_SIZE, CV_8U, cv::Scalar(0));
+    this->draw(grid, mat, TAG_CENTER);
+    return mat;
+}
+
+}
