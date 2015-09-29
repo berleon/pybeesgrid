@@ -154,11 +154,41 @@ void * init_numpy() {
     import_array();
     return NULL;
 }
+#define ATTR(NAME) \
+    bp::scope().attr(#NAME) = #NAME
 
 BOOST_PYTHON_MODULE(pydeepdecoder)
 {
     init_numpy();
     bp::def("generateBatch", generateBatch);
+    ATTR(INNER_BLACK_SEMICIRCLE);
+    ATTR(CELL_0_BLACK);
+    ATTR(CELL_1_BLACK);
+    ATTR(CELL_2_BLACK);
+    ATTR(CELL_3_BLACK);
+    ATTR(CELL_4_BLACK);
+    ATTR(CELL_5_BLACK);
+    ATTR(CELL_6_BLACK);
+    ATTR(CELL_7_BLACK);
+    ATTR(CELL_8_BLACK);
+    ATTR(CELL_9_BLACK);
+    ATTR(CELL_10_BLACK);
+    ATTR(CELL_11_BLACK);
+    ATTR(IGNORE);
+    ATTR(CELL_0_WHITE);
+    ATTR(CELL_1_WHITE);
+    ATTR(CELL_2_WHITE);
+    ATTR(CELL_3_WHITE);
+    ATTR(CELL_4_WHITE);
+    ATTR(CELL_5_WHITE);
+    ATTR(CELL_6_WHITE);
+    ATTR(CELL_7_WHITE);
+    ATTR(CELL_8_WHITE);
+    ATTR(CELL_9_WHITE);
+    ATTR(CELL_10_WHITE);
+    ATTR(CELL_11_WHITE);
+    ATTR(OUTER_WHITE_RING);
+    ATTR(INNER_WHITE_SEMICIRCLE);
 
     bp::class_<GridGenerator>("GridGenerator")
             .def("setYawAngle", &GridGenerator::setYawAngle)
