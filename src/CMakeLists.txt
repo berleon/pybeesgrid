@@ -2,7 +2,7 @@ file(GLOB src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
 file(GLOB hdr RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.h)
 list(REMOVE_ITEM src "main.cpp"  "caffe.cpp")
 
-add_library(deepdecoder ${src} ${hdr} )
+add_library(deepdecoder STATIC ${src} ${hdr} )
 
 target_link_libraries(deepdecoder ${libs})
 

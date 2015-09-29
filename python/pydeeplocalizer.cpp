@@ -203,6 +203,8 @@ BOOST_PYTHON_MODULE(pydeepdecoder)
             .def("setBlack", &BadGridArtist::setBlack)
             .def("setBackground", &BadGridArtist::setBackground);
 
+    bp::class_<BlackWhiteArtist, bp::bases<GridArtist>>("BlackWhiteArtist");
+
     bp::class_<MaskGridArtist, bp::bases<GridArtist>>("MaskGridArtist");
 
     bp::class_<PyGTDataLoader>("GTDataLoader", bp::init<bp::list>())

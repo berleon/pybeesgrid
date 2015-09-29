@@ -109,7 +109,13 @@ public:
     virtual ~GridArtist() = default;
 protected:
     virtual void _draw(const GeneratedGrid & grid, cv::Mat & img, cv::Point2i center) = 0;
+};
 
+class BlackWhiteArtist : public GridArtist {
+public:
+    virtual ~BlackWhiteArtist() = default;
+protected:
+    virtual void _draw(const GeneratedGrid & grid, cv::Mat & img, cv::Point2i center);
 };
 
 class BadGridArtist : public GridArtist {

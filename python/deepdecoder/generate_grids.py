@@ -17,6 +17,7 @@ from . import pydeepdecoder as pydd
 
 GridGenerator = pydd.GridGenerator
 BadGridArtist = pydd.BadGridArtist
+BlackWhiteArtist = pydd.BlackWhiteArtist
 MaskGridArtist = pydd.MaskGridArtist
 
 def batches(batch_size=64, generator=None, with_gird_params=False, artist=None):

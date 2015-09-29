@@ -178,4 +178,24 @@ cv::Mat GridArtist::draw(const GeneratedGrid &grid)
     return mat;
 }
 
+void BlackWhiteArtist::_draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2i center)
+{
+    static int black = 0;
+    static int white = 255;
+    const auto & coords2D = grid.getCoordinates2D();
+    const auto outer_white_ring = translate(coords2D.at(Grid::INDEX_OUTER_WHITE_RING), center);
+    const auto inner_white_semicircle = translate(coords2D.at(Grid::INDEX_INNER_WHITE_SEMICIRCLE), center);
+    const auto inner_black_semicircle = translate(coords2D.at(Grid::INDEX_INNER_BLACK_SEMICIRCLE), center);
+    cv::fillConvexPoly(img, outer_white_ring, white);
+    for (size_t i = Grid::INDEX_MIDDLE_CELLS_BEGIN; i < Grid::INDEX_MIDDLE_CELLS_BEGIN + Grid::NUM_MIDDLE_CELLS; ++i)
+    {
+        const auto cell = translate(coords2D.at(i), center);
+        boost::tribool bit = grid.getIdArray()[i - Grid::INDEX_MIDDLE_CELLS_BEGIN];
+        cv::Scalar color = bit ? white : black;
+        cv::fillConvexPoly(img, cell, color);
+    }
+    cv::fillConvexPoly(img, inner_white_semicircle, white);
+    cv::fillConvexPoly(img, inner_black_semicircle, black);
+}
+
 }
