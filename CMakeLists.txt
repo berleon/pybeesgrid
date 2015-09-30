@@ -1,8 +1,9 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8.7)
 
 cmake_policy(SET CMP0020 NEW)
 cmake_policy(SET CMP0009 NEW)
 cmake_policy(SET CMP0012 NEW)
+cmake_policy(SET CMP0046 NEW)
 
 project(deepdecoder)
 
@@ -36,8 +37,6 @@ else()
         SOURCE_DIR "${CMAKECONFIG_PATH}")
 endif()
 
-biorobotics_config()
-
 set(CAFFE_COMMIT "285cad9a74d5ab85596369c17b93262780aacdf7")
 set(CAFFE_GIT_REPO "https://github.com/berleon/caffe")
 set(USE_DEEPLOCALIZER 1)
@@ -45,37 +44,20 @@ set(BLAS Open CACHE STRING "Use openblas")
 set(BUILD_python Off)
 set(BUILD_python_layer Off)
 set(BIOTRACKER_BUILD_TESTS OFF CACHE BOOL "Don't build biotrackers tests")
-if(NOT DEFINED PIPELINE_PATH)
-    CPM_AddModule("pipeline"
-        GIT_REPOSITORY "https://github.com/BioroboticsLab/pipeline.git"
-        GIT_TAG "cpm"
-    )
-else()
-    CPM_AddModule("pipeline"
-        SOURCE_DIR "${PIPELINE_PATH}"
-    )
-endif()
 
-if(NOT DEFINED BIOTRACKER_PATH)
-    CPM_AddModule("BioTracker"
-        GIT_REPOSITORY "https://github.com/BioroboticsLab/biotracker_core.git"
-        # commit from 29.9.2015
-        GIT_TAG "606e6144615a1efda634278efa06497a0bc88681")
-else()
-    CPM_AddModule("BioTracker"
-        SOURCE_DIR "${BIOTRACKER_PATH}"
-    )
-endif()
+include_pipeline("7c54ed3ab7472585518e6a34ca345c389a1644a7")
+include_biotracker_core("606e6144615a1efda634278efa06497a0bc88681")
 
 CPM_AddModule("cpm_catch"
   GIT_REPOSITORY "https://github.com/bcachet/cpm-catch")
 
 CPM_Finish()
 
+biorobotics_config()
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ ${CMAKE_MODULE_PATH})
 
-# project dependecies
 find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(Threads REQUIRED)
@@ -103,6 +85,7 @@ set(libs
     ${CUDA_LIBRARIES}
     ${CPM_LIBRARIES}
 )
+
 
 enable_testing(true)
 add_subdirectory(src)
