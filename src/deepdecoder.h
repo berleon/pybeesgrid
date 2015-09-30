@@ -3,7 +3,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <caffe/data_layers.hpp>
-#include <biotracker/tracking/algorithm/BeesBook/ImgAnalysisTracker/pipeline/common/Grid.h>
+#include <pipeline/common/Grid.h>
 #include <boost/logic/tribool.hpp>
 
 

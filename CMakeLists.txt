@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 
 cmake_policy(SET CMP0020 NEW)
 cmake_policy(SET CMP0009 NEW)
+cmake_policy(SET CMP0012 NEW)
 
 project(deepdecoder)
 
@@ -25,13 +26,35 @@ if (NOT EXISTS ${CPM_DIR}/CPM.cmake)
 endif()
 include(${CPM_DIR}/CPM.cmake)
 
-# the biotracker needs the submodules initialized. But I don't know how to do
-# that with cpm. Until this is fixed you must set this path manually to a
-# local biotracker repository with the submodules initialized.
-CPM_AddModule("BioTracker"
-    SOURCE_DIR /home/leon/uni/vision_swp/biotracker)
-    # GIT_REPOSITORY "git@github.com:berleon/biotracker.git"
-    # GIT_TAG "cpm"
+
+set(CAFFE_COMMIT "285cad9a74d5ab85596369c17b93262780aacdf7")
+set(CAFFE_GIT_REPO "https://github.com/berleon/caffe")
+set(USE_DEEPLOCALIZER 1)
+set(BLAS Open CACHE STRING "Use openblas")
+set(BUILD_python Off)
+set(BUILD_python_layer Off)
+set(BIOTRACKER_BUILD_TESTS OFF CACHE BOOL "Don't build biotrackers tests")
+if(NOT DEFINED PIPELINE_PATH)
+    CPM_AddModule("pipeline"
+        GIT_REPOSITORY "https://github.com/BioroboticsLab/pipeline.git"
+        GIT_TAG "cpm"
+    )
+else()
+    CPM_AddModule("pipeline"
+        SOURCE_DIR "${PIPELINE_PATH}"
+    )
+endif()
+
+if(NOT DEFINED BIOTRACKER_PATH)
+    CPM_AddModule("BioTracker"
+        GIT_REPOSITORY "https://github.com/BioroboticsLab/biotracker_core.git"
+        # commit from 29.9.2015
+        GIT_TAG "606e6144615a1efda634278efa06497a0bc88681")
+else()
+    CPM_AddModule("BioTracker"
+        SOURCE_DIR "${BIOTRACKER_PATH}"
+    )
+endif()
 
 CPM_AddModule("cpm_catch"
   GIT_REPOSITORY "https://github.com/bcachet/cpm-catch")
@@ -45,9 +68,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ ${CMAKE_MODULE_PATH})
 find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(Threads REQUIRED)
-find_package(Boost COMPONENTS system filesystem serialization python3 program_options REQUIRED)
 find_package(PythonLibs 3 REQUIRED)
-find_package(Caffe REQUIRED)
+find_package(Boost COMPONENTS system filesystem serialization python3 program_options REQUIRED)
 find_package(LMDB REQUIRED)
 find_package(CUDA REQUIRED)
 find_package(gflags REQUIRED)
@@ -147,7 +169,6 @@ endif()
 include_directories(
     SYSTEM ${CATCH_INCLUDE_DIR}
     SYSTEM ${OpenCV_INCLUDE_DIRS}
-    SYSTEM ${Caffe_INCLUDE_DIRS}
     SYSTEM ${LMDB_INCLUDE_DIRS}
     SYSTEM ${CUDA_INCLUDE_DIRS}
     SYSTEM ${DEEP_CLASSIFIER_INCLUDE_DIR}
@@ -158,7 +179,6 @@ set(libs
     ${Boost_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
     ${PYTHON_LIBRARIES}
-    ${Caffe_LIBRARIES}
     ${LMDB_LIBRARIES}
     ${CUDA_LIBRARIES}
     ${CPM_LIBRARIES}

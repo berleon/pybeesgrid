@@ -5,7 +5,7 @@
 #include <boost/filesystem.hpp>
 #include <opencv/highgui.h>
 #include "CaffeGridGenerator.h"
-#include <CaffeEvaluator.h>
+#include "../CaffeEvaluator.h"
 
 using namespace deepdecoder;
 namespace io = boost::filesystem;

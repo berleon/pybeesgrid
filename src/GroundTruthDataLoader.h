@@ -1,11 +1,10 @@
 #pragma once
 
 #include "deepdecoder.h"
-#include <biotracker/tracking/algorithm/BeesBook/ImgAnalysisTracker/GroundTruthEvaluator.h>
-
 #include <cereal/archives/json.hpp>
-#include <biotracker/tracking/serialization/SerializationData.h>
-#include <biotracker/tracking/algorithm/BeesBook/ImgAnalysisTracker/legacy/Grid3D.h>
+#include <biotracker/serialization/SerializationData.h>
+#include <pipeline/util/GroundTruthEvaluator.h>
+#include "Grid3D.h"
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 

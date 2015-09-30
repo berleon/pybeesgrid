@@ -8,7 +8,7 @@
 
 #include <bits/unique_ptr.h>
 #include <caffe/proto/caffe.pb.h>
-#include <biotracker/tracking/algorithm/BeesBook/ImgAnalysisTracker/pipeline/common/Grid.h>
+#include <pipeline/common/Grid.h>
 
 #include "deepdecoder.h"
 

@@ -2,8 +2,8 @@
 
 #include <string>
 #include <caffe/net.hpp>
-#include <biotracker/tracking/algorithm/BeesBook/ImgAnalysisTracker/GroundTruthEvaluator.h>
-#include <biotracker/tracking/algorithm/BeesBook/ImgAnalysisTracker/pipeline/datastructure/PipelineGrid.h>
+#include <pipeline/util/GroundTruthEvaluator.h>
+#include <pipeline/datastructure/PipelineGrid.h>
 #include "deepdecoder.h"
 #include "CaffeGridGenerator.h"
 #include "GroundTruthDataLoader.h"
