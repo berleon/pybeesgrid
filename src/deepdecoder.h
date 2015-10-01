@@ -8,7 +8,7 @@
 
 
 namespace deepdecoder {
-    const size_t TAG_SIZE = 60;
+    const size_t TAG_SIZE = 64;
     const size_t TAG_PIXELS = TAG_SIZE * TAG_SIZE;
     const cv::Point2i TAG_CENTER = cv::Point2i(TAG_SIZE/2, TAG_SIZE/2);
 

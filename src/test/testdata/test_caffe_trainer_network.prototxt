@@ -10,8 +10,8 @@ layer {
   memory_data_param {
     batch_size: 64
     channels: 1
-    height: 60
-    width: 60
+    height: 64
+    width: 64
     n_labels: 12
   }
 
