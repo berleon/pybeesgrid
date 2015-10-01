@@ -121,20 +121,6 @@ private:
     }
 
     PyObject * labelsToPyArray(std::vector<std::vector<float>> labels, size_t batch_size) {
-        std::stringstream ss;
-        for(size_t i = 0; i < labels.size(); i++) {
-            auto & label = labels.at(i);
-            ss << "#" << std::setw(3) << i  << ": ";
-            for(auto & bit : label) {
-                if(bit == 0) {
-                    ss << '#';
-                } else {
-                    ss << ' ';
-                }
-            }
-            ss << '\n';
-        }
-        // std::cout << ss.str() << std::endl;
         std::array<npy_intp, 2> labels_shape{static_cast<npy_intp>(batch_size), Grid::NUM_MIDDLE_CELLS};
         size_t labels_count = get_count<2>(labels_shape);
         float *raw_label_data = static_cast<float*>(calloc(labels_count, sizeof(float)));
