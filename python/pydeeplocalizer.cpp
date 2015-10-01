@@ -140,43 +140,45 @@ void * init_numpy() {
     import_array();
     return NULL;
 }
-#define ATTR(NAME) \
-    bp::scope().attr(#NAME) = #NAME
+#define ATTR(NAME) py::scope().attr(#NAME) = NAME
+#define ENUM_ATTR(NAME) py::scope().attr(#NAME) = size_t(NAME)
 
 BOOST_PYTHON_MODULE(pydeepdecoder)
 {
     init_numpy();
-    bp::def("generateBatch", generateBatch);
-    ATTR(INNER_BLACK_SEMICIRCLE);
-    ATTR(CELL_0_BLACK);
-    ATTR(CELL_1_BLACK);
-    ATTR(CELL_2_BLACK);
-    ATTR(CELL_3_BLACK);
-    ATTR(CELL_4_BLACK);
-    ATTR(CELL_5_BLACK);
-    ATTR(CELL_6_BLACK);
-    ATTR(CELL_7_BLACK);
-    ATTR(CELL_8_BLACK);
-    ATTR(CELL_9_BLACK);
-    ATTR(CELL_10_BLACK);
-    ATTR(CELL_11_BLACK);
-    ATTR(IGNORE);
-    ATTR(CELL_0_WHITE);
-    ATTR(CELL_1_WHITE);
-    ATTR(CELL_2_WHITE);
-    ATTR(CELL_3_WHITE);
-    ATTR(CELL_4_WHITE);
-    ATTR(CELL_5_WHITE);
-    ATTR(CELL_6_WHITE);
-    ATTR(CELL_7_WHITE);
-    ATTR(CELL_8_WHITE);
-    ATTR(CELL_9_WHITE);
-    ATTR(CELL_10_WHITE);
-    ATTR(CELL_11_WHITE);
-    ATTR(OUTER_WHITE_RING);
-    ATTR(INNER_WHITE_SEMICIRCLE);
+    py::def("generateBatch", generateBatch);
 
-    bp::class_<GridGenerator>("GridGenerator")
+    ENUM_ATTR(INNER_BLACK_SEMICIRCLE);
+    ENUM_ATTR(CELL_0_BLACK);
+    ENUM_ATTR(CELL_1_BLACK);
+    ENUM_ATTR(CELL_2_BLACK);
+    ENUM_ATTR(CELL_3_BLACK);
+    ENUM_ATTR(CELL_4_BLACK);
+    ENUM_ATTR(CELL_5_BLACK);
+    ENUM_ATTR(CELL_6_BLACK);
+    ENUM_ATTR(CELL_7_BLACK);
+    ENUM_ATTR(CELL_8_BLACK);
+    ENUM_ATTR(CELL_9_BLACK);
+    ENUM_ATTR(CELL_10_BLACK);
+    ENUM_ATTR(CELL_11_BLACK);
+    ENUM_ATTR(IGNORE);
+    ENUM_ATTR(CELL_0_WHITE);
+    ENUM_ATTR(CELL_1_WHITE);
+    ENUM_ATTR(CELL_2_WHITE);
+    ENUM_ATTR(CELL_3_WHITE);
+    ENUM_ATTR(CELL_4_WHITE);
+    ENUM_ATTR(CELL_5_WHITE);
+    ENUM_ATTR(CELL_6_WHITE);
+    ENUM_ATTR(CELL_7_WHITE);
+    ENUM_ATTR(CELL_8_WHITE);
+    ENUM_ATTR(CELL_9_WHITE);
+    ENUM_ATTR(CELL_10_WHITE);
+    ENUM_ATTR(CELL_11_WHITE);
+    ENUM_ATTR(OUTER_WHITE_RING);
+    ENUM_ATTR(INNER_WHITE_SEMICIRCLE);
+
+    ATTR(TAG_SIZE);
+
             .def("setYawAngle", &GridGenerator::setYawAngle)
             .def("setPitchAngle", &GridGenerator::setPitchAngle)
             .def("setRollAngle", &GridGenerator::setRollAngle)
