@@ -10,7 +10,8 @@ GridGenerator::GridGenerator() : _re(long(time(0)))
 {
     setYawAngle(0., 2 * M_PI);
     setPitchAngle(to_radian(-30), to_radian(65));
-    setRollAngle(to_radian(-10), to_radian(10));
+    setRollAngle(to_radian(-30), to_radian(30));
+    setRadius(22, 25);
     setCenter(0, 3);
 }
 
@@ -27,20 +28,19 @@ GeneratedGrid GridGenerator::randomGrid()  {
     double angle_z = _YawAngle_dis(_re);
     double angle_y = _PitchAngle_dis(_re);
     double angle_x = _RollAngle_dis(_re);
-
+    size_t radius = _Radius_dis(_re);
     auto center_cords = [&]() { return int(round(_Center_dis(_re))); };
     cv::Point2i center{center_cords(), center_cords()};
-    return GeneratedGrid(center, id, angle_x, angle_y, angle_z);
+    return GeneratedGrid(id, center, radius, angle_x, angle_y, angle_z);
 }
-GeneratedGrid::GeneratedGrid(cv::Point2i center, Grid::idarray_t id,
+GeneratedGrid::GeneratedGrid(Grid::idarray_t id, cv::Point2i center, double radius,
                              double angle_x, double angle_y, double angle_z) :
-        Grid(center, RADIUS, angle_z, angle_y, angle_x)
+        Grid(center, radius, angle_z, angle_y, angle_x)
 {
     _ID = id;
     prepare_visualization_data();
 }
 
-GeneratedGrid::~GeneratedGrid() = default;
 
 
 std::vector<cv::Point> translate(const std::vector<cv::Point> points, const cv::Point &offset) {
@@ -90,6 +90,12 @@ int GeneratedGrid::getLabelAsInt() const {
         }
     }
     return label;
+}
+
+GeneratedGrid GeneratedGrid::scale(double factor) const
+{
+    return GeneratedGrid(_ID, _center, _radius * factor,
+                         _angle_x, _angle_y, _angle_z);
 }
 
 

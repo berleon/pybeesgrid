@@ -38,8 +38,7 @@ struct GridBackground {
 
 class GeneratedGrid : public Grid {
 public:
-    static const size_t RADIUS = 25;
-    virtual ~GeneratedGrid() override;
+    virtual ~GeneratedGrid() override = default;
 
     int getLabelAsInt() const;
 
@@ -53,10 +52,10 @@ public:
     inline const std::vector<std::vector<cv::Point>> & getCoordinates2D() const {
         return _coordinates2D;
     }
-
+    GeneratedGrid scale(double factor) const;
     friend class GridGenerator;
 protected:
-    explicit GeneratedGrid(cv::Point2i center, Grid::idarray_t id,
+    explicit GeneratedGrid(Grid::idarray_t id, cv::Point2i center, double radius,
                            double angle_x, double angle_y, double angle_z);
 private:
     cv::Scalar tribool2Color(const boost::logic::tribool &tribool) const;
@@ -86,6 +85,7 @@ public:
     UNIFORM_REAL_DISTRIBUTION_MEMBER(YawAngle)
     UNIFORM_REAL_DISTRIBUTION_MEMBER(PitchAngle)
     UNIFORM_REAL_DISTRIBUTION_MEMBER(RollAngle)
+    UNIFORM_INT_DISTRIBUTION_MEMBER(Radius)
     NORMAL_DISTRIBUTION_MEMBER(Center)
 private:
     Grid::idarray_t generateID();

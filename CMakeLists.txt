@@ -45,7 +45,7 @@ set(BUILD_python Off)
 set(BUILD_python_layer Off)
 set(BIOTRACKER_BUILD_TESTS OFF CACHE BOOL "Don't build biotrackers tests")
 
-include_pipeline("7c54ed3ab7472585518e6a34ca345c389a1644a7")
+include_pipeline("1c05b839536ce530f89453fe329247ce1b2b96dc")
 include_biotracker_core("606e6144615a1efda634278efa06497a0bc88681")
 
 CPM_AddModule("cpm_catch"
