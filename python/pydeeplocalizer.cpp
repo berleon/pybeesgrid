@@ -9,7 +9,7 @@
 #include <GroundTruthDataLoader.h>
 #include <iomanip>
 
-namespace bp = boost::python;
+namespace py = boost::python;
 using namespace deepdecoder;
 
 template<size_t N>
@@ -34,6 +34,17 @@ PyObject * newPyArrayOwnedByNumpy(shape_t<N> shape, int type, void * data) {
     PyArray_ENABLEFLAGS(pyArr, NPY_ARRAY_OWNDATA);
     return pyObj;
 }
+
+template<typename N>
+std::vector<N> pylistToVec(py::list pylist) {
+    std::vector<N> vec;
+    for (int i = 0; i < py::len(pylist); ++i)
+    {
+        vec.push_back(py::extract<N>(pylist[i]));
+    }
+    return vec;
+}
+
 void setGridParams(const GeneratedGrid & grid, double * &ptr) {
     *ptr = grid.getZRotation(); ++ptr;
     *ptr = grid.getYRotation(); ++ptr;
@@ -82,10 +93,10 @@ std::vector<N> pylistToVec(bp::list pylist) {
 
 class PyGTDataLoader {
 public:
-    PyGTDataLoader(bp::list pyfiles) :
+    PyGTDataLoader(py::list pyfiles) :
             _gt_loader(pylistToVec<std::string>(pyfiles)) { };
 
-    bp::object batch(size_t batch_size, bool repeat) {
+    py::object batch(size_t batch_size, bool repeat) {
         GTRepeat repeat_enum;
         if (repeat) {
             repeat_enum = REPEAT;
@@ -96,12 +107,12 @@ public:
                                                                        repeat_enum);
         if(opt_batch) {
             auto batch = opt_batch.get();
-            return bp::make_tuple(
-                    bp::handle<>(imagesToPyArray(batch.first, batch_size)),
-                    bp::handle<>(labelsToPyArray(batch.second, batch_size))
+            return py::make_tuple(
+                    py::handle<>(imagesToPyArray(batch.first, batch_size)),
+                    py::handle<>(labelsToPyArray(batch.second, batch_size))
             );
         } else {
-            return bp::object(bp::handle<>(Py_None));
+            return py::object(py::handle<>(Py_None));
         }
     };
 
@@ -136,7 +147,7 @@ private:
 };
 
 void * init_numpy() {
-    bp::numeric::array::set_module_and_type("numpy", "ndarray");
+    py::numeric::array::set_module_and_type("numpy", "ndarray");
     import_array();
     return NULL;
 }
@@ -179,23 +190,24 @@ BOOST_PYTHON_MODULE(pydeepdecoder)
 
     ATTR(TAG_SIZE);
 
+    py::class_<GridGenerator>("GridGenerator")
             .def("setYawAngle", &GridGenerator::setYawAngle)
             .def("setPitchAngle", &GridGenerator::setPitchAngle)
             .def("setRollAngle", &GridGenerator::setRollAngle)
             .def("setCenter", &GridGenerator::setCenter);
 
-    bp::class_<GridArtist, boost::noncopyable>("BadGridArtist", bp::no_init);
+    py::class_<GridArtist, boost::noncopyable>("BadGridArtist", py::no_init);
 
-    bp::class_<BadGridArtist, bp::bases<GridArtist>>("BadGridArtist")
+    py::class_<BadGridArtist, py::bases<GridArtist>>("BadGridArtist")
             .def("setWhite", &BadGridArtist::setWhite)
             .def("setBlack", &BadGridArtist::setBlack)
             .def("setBackground", &BadGridArtist::setBackground);
 
-    bp::class_<BlackWhiteArtist, bp::bases<GridArtist>>("BlackWhiteArtist");
+    py::class_<BlackWhiteArtist, py::bases<GridArtist>>("BlackWhiteArtist");
 
-    bp::class_<MaskGridArtist, bp::bases<GridArtist>>("MaskGridArtist");
+    py::class_<MaskGridArtist, py::bases<GridArtist>>("MaskGridArtist");
 
-    bp::class_<PyGTDataLoader>("GTDataLoader", bp::init<bp::list>())
+    py::class_<PyGTDataLoader>("GTDataLoader", py::init<py::list>())
             .def("batch", &PyGTDataLoader::batch);
 }
 
