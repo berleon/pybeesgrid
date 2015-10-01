@@ -53,42 +53,63 @@ void setGridParams(const GeneratedGrid & grid, double * &ptr) {
     *ptr = grid.getCenter().y; ++ptr;
     *ptr = grid.getRadius(); ++ptr;
 }
-bp::tuple generateBatch(GridGenerator & gen, GridArtist & artist, size_t batch_size) {
+
+PyObject * generateBatchScaled(GridGenerator & gen, GridArtist & artist, size_t batch_size,
+                    const std::vector<GeneratedGrid> & grids,
+                    const shape4d_t shape,
+                    double scale) {
+    shape4d_t scaled_shape = shape;
+    for(size_t i = 2; i < shape.size(); i++) {
+        int dim = shape.at(i);
+        scaled_shape[i] = npy_intp(round(dim*scale));
+    }
+    std::stringstream ss;
+    for(size_t i = 0; i < shape.size(); i++) {
+        ss << scaled_shape[i] << ",";
+    }
+    std::cout << "scaled: " << scale << "," << ss.str() << std::endl;
+    uchar *raw_data = static_cast<uchar*>(calloc(get_count(scaled_shape), sizeof(uchar)));
+    size_t pixels_per_tag = scaled_shape[2]*scaled_shape[3];
+    for(size_t i = 0; i < batch_size; i++) {
+        const GeneratedGrid & grid = grids.at(i);
+        GeneratedGrid gg = grid.scale(scale);
+        CHECK(i*pixels_per_tag < get_count(scaled_shape));
+        cv::Mat mat(scaled_shape[2], scaled_shape[3], CV_8UC1, raw_data + i*pixels_per_tag);
+        artist.draw(gg, mat);
+        CHECK(mat.refcount == nullptr);
+    }
+    return newPyArrayOwnedByNumpy(scaled_shape, NPY_UBYTE, raw_data);
+}
+
+py::tuple generateBatch(GridGenerator & gen, GridArtist & artist, size_t batch_size, py::list py_scales) {
+    auto scales = pylistToVec<double>(py_scales);
     const shape4d_t shape{static_cast<npy_intp>(batch_size), 1, TAG_SIZE, TAG_SIZE};
     std::array<npy_intp, 2> labels_shape{static_cast<npy_intp>(batch_size), Grid::NUM_MIDDLE_CELLS};
     static const size_t n_params = 6;
     std::array<npy_intp, 2> grid_params_shape{static_cast<npy_intp>(batch_size), n_params};
-    uchar *raw_data = static_cast<uchar*>(calloc(get_count(shape), sizeof(uchar)));
     float *raw_labels = static_cast<float*>(calloc(get_count(labels_shape), sizeof(float)));
     double *raw_grid_params = static_cast<double*>(
             calloc(get_count(grid_params_shape), sizeof(double)));
     float *label_ptr = raw_labels;
     double *grid_params_ptr = raw_grid_params;
+
+    std::vector<GeneratedGrid> grids;
     for(size_t i = 0; i < batch_size; i++) {
-        GeneratedGrid gg = gen.randomGrid();
-        cv::Mat mat(TAG_SIZE, TAG_SIZE, CV_8UC1, raw_data + i*TAG_PIXELS);
-        artist.draw(gg, mat);
+        auto gg = gen.randomGrid();
         auto label = gg.getLabelAsVector<float>();
         memcpy(label_ptr, &label[0], label.size()*sizeof(float));
         label_ptr += label.size();
-        CHECK(mat.refcount == nullptr);
+        grids.emplace_back(std::move(gg));
         setGridParams(gg, grid_params_ptr);
     }
-    return bp::make_tuple(
-            bp::handle<>(newPyArrayOwnedByNumpy(shape, NPY_UBYTE, raw_data)),
-            bp::handle<>(newPyArrayOwnedByNumpy(labels_shape, NPY_FLOAT, raw_labels)),
-            bp::handle<>(newPyArrayOwnedByNumpy(grid_params_shape, NPY_DOUBLE, raw_grid_params))
-    );
-}
-
-template<typename N>
-std::vector<N> pylistToVec(bp::list pylist) {
-    std::vector<N> vec;
-    for (int i = 0; i < bp::len(pylist); ++i)
-    {
-        vec.push_back(bp::extract<N>(pylist[i]));
+    py::list return_py_objs;
+    for(auto & scale : scales) {
+        return_py_objs.append(py::handle<>(generateBatchScaled(gen, artist, batch_size,
+                                                grids, shape, scale)));
     }
-    return vec;
+    return_py_objs.append(py::handle<>(newPyArrayOwnedByNumpy(labels_shape, NPY_FLOAT, raw_labels)));
+    return_py_objs.append(py::handle<>(newPyArrayOwnedByNumpy(grid_params_shape, NPY_DOUBLE, raw_grid_params)));
+    return py::tuple(return_py_objs);
 }
 
 class PyGTDataLoader {

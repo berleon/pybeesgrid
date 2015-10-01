@@ -23,10 +23,18 @@ def test_generate_grids():
     assert grids.shape == (bs, 1, TAG_SIZE, TAG_SIZE)
     assert labels.shape == (bs, NUM_CELLS)
 
+def test_generate_grids_scaled():
+    bs = 64
+    grids_1, grids_05, grids_025, labels = next(gen_grid_batches(bs, scales=[1, 0.5, 0.25]))
+    assert grids_1.shape == (bs, 1, TAG_SIZE, TAG_SIZE)
+    assert grids_05.shape == (bs, 1, TAG_SIZE//2, TAG_SIZE//2)
+    assert grids_025.shape == (bs, 1, TAG_SIZE//4, TAG_SIZE//4)
+    assert labels.shape == (bs, NUM_CELLS)
 
 def test_gt_loader():
     bs = 64
     gt_files = ["../../src/test/testdata/Cam_0_20140804152006_3.tdat"] * 3
     for grids, labels in gt_batches(gt_files, batch_size=bs):
+        print(TAG_SIZE)
         assert grids.shape == (bs, 1, TAG_SIZE, TAG_SIZE)
         assert labels.shape == (bs, NUM_CELLS)

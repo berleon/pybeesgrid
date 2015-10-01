@@ -15,13 +15,14 @@
 
 from . import pydeepdecoder as pydd
 
-from pydd import INNER_BLACK_SEMICIRCLE, CELL_0_BLACK, CELL_1_BLACK, \
+from .pydeepdecoder import INNER_BLACK_SEMICIRCLE, CELL_0_BLACK, CELL_1_BLACK, \
      CELL_2_BLACK, CELL_3_BLACK, CELL_4_BLACK, CELL_5_BLACK, CELL_6_BLACK, \
      CELL_7_BLACK, CELL_8_BLACK, CELL_9_BLACK, CELL_10_BLACK, CELL_11_BLACK, \
      IGNORE, CELL_0_WHITE, CELL_1_WHITE, CELL_2_WHITE, CELL_3_WHITE, \
      CELL_4_WHITE, CELL_5_WHITE, CELL_6_WHITE, CELL_7_WHITE, CELL_8_WHITE, \
      CELL_9_WHITE, CELL_10_WHITE, CELL_11_WHITE, OUTER_WHITE_RING, \
      INNER_WHITE_SEMICIRCLE
+
 
 MASK = {
     "INNER_BLACK_SEMICIRCLE": INNER_BLACK_SEMICIRCLE,
@@ -66,15 +67,17 @@ GridGenerator = pydd.GridGenerator
 BadGridArtist = pydd.BadGridArtist
 BlackWhiteArtist = pydd.BlackWhiteArtist
 MaskGridArtist = pydd.MaskGridArtist
-def batches(batch_size=64, generator=None, with_gird_params=False, artist=None):
+
+
+def batches(batch_size=64, generator=None, with_gird_params=False, artist=None, scales=[1.]):
     if generator is None:
         generator = GridGenerator()
     if artist is None:
-        artist  = BadGridArtist();
+        artist = BadGridArtist()
     while True:
-        batch = pydd.generateBatch(generator, artist, batch_size)
+        batch = pydd.generateBatch(generator, artist, batch_size, scales)
         if with_gird_params:
             yield batch
         else:
-            yield batch[:2]
+            yield batch[:len(scales)+1]
 

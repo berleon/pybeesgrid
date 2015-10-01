@@ -12,5 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-TAG_SIZE = 60
+from .pydeepdecoder import TAG_SIZE as CXX_TAG_SIZE
+
+TAG_SIZE = CXX_TAG_SIZE
 NUM_CELLS = 12
