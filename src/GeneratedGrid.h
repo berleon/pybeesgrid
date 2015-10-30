@@ -133,6 +133,8 @@ private:
     cv::Scalar pickColorForTribool(const boost::logic::tribool &tribool, int black, int white) const;
 };
 
+const static size_t MASK_LEN = 28;
+
 enum MASK {
     INNER_BLACK_SEMICIRCLE,
     CELL_0_BLACK = 1,
@@ -162,6 +164,14 @@ enum MASK {
     CELL_11_WHITE = IGNORE + 12,
     OUTER_WHITE_RING = IGNORE + 20,
     INNER_WHITE_SEMICIRCLE = IGNORE + 21
+};
+const unsigned char MASK_INDICIES[] = {
+    INNER_BLACK_SEMICIRCLE, CELL_0_BLACK, CELL_1_BLACK, CELL_2_BLACK,
+    CELL_3_BLACK, CELL_4_BLACK, CELL_5_BLACK, CELL_6_BLACK, CELL_7_BLACK,
+    CELL_8_BLACK, CELL_9_BLACK, CELL_10_BLACK, CELL_11_BLACK, IGNORE,
+    CELL_0_WHITE, CELL_1_WHITE, CELL_2_WHITE, CELL_3_WHITE, CELL_4_WHITE,
+    CELL_5_WHITE, CELL_6_WHITE, CELL_7_WHITE, CELL_8_WHITE, CELL_9_WHITE,
+    CELL_10_WHITE, CELL_11_WHITE, OUTER_WHITE_RING, INNER_WHITE_SEMICIRCLE
 };
 
 class MaskGridArtist : public GridArtist{

@@ -121,7 +121,8 @@ void MaskGridArtist::_draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2i 
     for (size_t i = Grid::INDEX_MIDDLE_CELLS_BEGIN; i < max_i; ++i)
     {
         const auto cell = translate(coords2d.at(i), center);
-        cv::Scalar color = MaskGridArtist::maskForTribool(i, grid.getIdArray().at(i - Grid::INDEX_MIDDLE_CELLS_BEGIN));
+        const size_t id_idx = i - static_cast<long>(Grid::INDEX_MIDDLE_CELLS_BEGIN);
+        cv::Scalar color = MaskGridArtist::maskForTribool(id_idx,  grid.getIdArray().at(id_idx));
         cv::fillConvexPoly(img, cell, color);
     }
     cv::fillConvexPoly(img, inner_white_semicircle, MASK::INNER_WHITE_SEMICIRCLE);
