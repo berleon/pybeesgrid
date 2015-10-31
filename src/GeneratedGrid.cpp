@@ -115,7 +115,9 @@ void MaskGridArtist::_draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2i 
     const auto outer_white_ring = translate(coords2d.at(Grid::INDEX_OUTER_WHITE_RING), center);
     const auto inner_white_semicircle = translate(coords2d.at(Grid::INDEX_INNER_WHITE_SEMICIRCLE), center);
     const auto inner_black_semicircle = translate(coords2d.at(Grid::INDEX_INNER_BLACK_SEMICIRCLE), center);
+    const auto background_ring = translate(coords2d.at(Grid::INDEX_INNER_BLACK_SEMICIRCLE), center);
 
+    cv::fillConvexPoly(img, background_ring, MASK::BACKGROUND_RING);
     cv::fillConvexPoly(img, outer_white_ring, MASK::OUTER_WHITE_RING);
     const auto max_i = Grid::INDEX_MIDDLE_CELLS_BEGIN + Grid::NUM_MIDDLE_CELLS;
     for (size_t i = Grid::INDEX_MIDDLE_CELLS_BEGIN; i < max_i; ++i)
@@ -159,8 +161,6 @@ void BadGridArtist::_draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2i c
 
     int black = _Black_dis(_re);
     int white = _White_dis(_re);
-    double gaussian_blur = _GaussianBlurStd_dis(_re);
-    GridBackground background{};
     const auto & coords2D = grid.getCoordinates2D();
     const auto outer_white_ring = translate(coords2D.at(Grid::INDEX_OUTER_WHITE_RING), center);
     const auto inner_white_semicircle = translate(coords2D.at(Grid::INDEX_INNER_WHITE_SEMICIRCLE), center);
@@ -193,6 +193,8 @@ void BlackWhiteArtist::_draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2
     const auto outer_white_ring = translate(coords2D.at(Grid::INDEX_OUTER_WHITE_RING), center);
     const auto inner_white_semicircle = translate(coords2D.at(Grid::INDEX_INNER_WHITE_SEMICIRCLE), center);
     const auto inner_black_semicircle = translate(coords2D.at(Grid::INDEX_INNER_BLACK_SEMICIRCLE), center);
+    const auto background_ring = translate(coords2D.at(Grid::INDEX_BACKGROUND_RING), center);
+    cv::fillConvexPoly(img, background_ring, 128);
     cv::fillConvexPoly(img, outer_white_ring, white);
     for (size_t i = Grid::INDEX_MIDDLE_CELLS_BEGIN; i < Grid::INDEX_MIDDLE_CELLS_BEGIN + Grid::NUM_MIDDLE_CELLS; ++i)
     {

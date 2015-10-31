@@ -45,7 +45,7 @@ set(BUILD_python Off)
 set(BUILD_python_layer Off)
 set(BIOTRACKER_BUILD_TESTS OFF CACHE BOOL "Don't build biotrackers tests")
 
-include_pipeline("1c05b839536ce530f89453fe329247ce1b2b96dc")
+include_pipeline("d5d8090a017867a53ac0ce02ead04a55cea933c8")
 include_biotracker_core("606e6144615a1efda634278efa06497a0bc88681")
 
 CPM_AddModule("cpm_catch"
@@ -66,7 +66,6 @@ find_package(Boost COMPONENTS system filesystem serialization python3 program_op
 find_package(LMDB REQUIRED)
 find_package(CUDA REQUIRED)
 find_package(gflags REQUIRED)
-
 
 include_directories(
     SYSTEM ${CATCH_INCLUDE_DIR}
