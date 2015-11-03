@@ -1,6 +1,5 @@
 
 #include "GeneratedGrid.h"
-#include <caffe/util/io.hpp>
 namespace deepdecoder {
 
 constexpr double to_radian(double degrees) {
@@ -50,34 +49,6 @@ std::vector<cv::Point> translate(const std::vector<cv::Point> points, const cv::
         translated_pts.push_back(p + offset);
     }
     return translated_pts;
-}
-
-
-caffe::Datum gridToCaffeDatum(const GeneratedGrid & grid, const cv::Mat & mat) {
-    caffe::Datum datum;
-    std::vector<uchar> buf;
-    cv::imencode(".jpeg", mat, buf);
-    datum.set_channels(mat.channels());
-    datum.set_width(TAG_SIZE);
-    datum.set_height(TAG_SIZE);
-    datum.set_data(std::string(reinterpret_cast<char *>(&buf[0]),
-                               buf.size()));
-    datum.set_label(grid.getLabelAsInt());
-    datum.set_encoded(true);
-    return datum;
-}
-
-std::vector<caffe::Datum> generateData(size_t batch_size, GridGenerator & gen, bool greyscale) {
-    int type = greyscale ? CV_8U : CV_8UC3;
-    std::vector<caffe::Datum> data(batch_size);
-    BadGridArtist drawer;
-    for(size_t i = 0; i < batch_size; i++) {
-        GeneratedGrid grid = gen.randomGrid();
-        cv::Mat mat(cv::Size(TAG_SIZE, TAG_SIZE), type);
-        drawer.draw(grid, mat, cv::Point(TAG_SIZE/2, TAG_SIZE/2));
-        data.emplace_back(gridToCaffeDatum(grid, mat));
-    }
-    return data;
 }
 
 

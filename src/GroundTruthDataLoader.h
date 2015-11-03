@@ -73,7 +73,8 @@ protected:
                     _frame_index = 0;
                     image_path = currentImageFileName();
                     if (!boost::filesystem::exists(image_path)) {
-                        LOG(INFO) << "GT Image does not exists: " << image_path;
+                        std::cerr << "[Warning] GT Image does not exists: "
+                                 << image_path << std::endl;
                         _frame_index++;
                     }
                 }
@@ -95,7 +96,7 @@ protected:
     }
     Serialization::Data loadGTData(const std::string &gt_path) {
         std::ifstream is(gt_path);
-        CHECK(is.is_open());
+        assert(is.is_open());
         cereal::JSONInputArchive ar(is);
         Serialization::Data data;
         ar(data);
@@ -106,7 +107,7 @@ protected:
         return cv::imread(gt_path, CV_LOAD_IMAGE_GRAYSCALE);
     }
     size_t cacheSize() {
-        CHECK_EQ(_img_cache.size(), _labels_cache.size());
+        assert(_img_cache.size() == _labels_cache.size());
         return _img_cache.size();
     };
     bool stepGTFilesIdx(const GTRepeat repeat) {

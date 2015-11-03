@@ -7,7 +7,6 @@
 #include <boost/logic/tribool.hpp>
 
 #include <bits/unique_ptr.h>
-#include <caffe/proto/caffe.pb.h>
 #include <pipeline/common/Grid.h>
 
 #include "deepdecoder.h"

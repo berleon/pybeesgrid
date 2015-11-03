@@ -54,7 +54,7 @@ void setGridParams(const GeneratedGrid & grid, double * &ptr) {
     *ptr = grid.getRadius(); ++ptr;
 }
 
-PyObject * generateBatchScaled(GridGenerator & gen, GridArtist & artist, size_t batch_size,
+PyObject * generateBatchScaled(GridArtist & artist, size_t batch_size,
                     const std::vector<GeneratedGrid> & grids,
                     const shape4d_t shape,
                     double scale) {
@@ -63,20 +63,15 @@ PyObject * generateBatchScaled(GridGenerator & gen, GridArtist & artist, size_t 
         int dim = shape.at(i);
         scaled_shape[i] = npy_intp(round(dim*scale));
     }
-    std::stringstream ss;
-    for(size_t i = 0; i < shape.size(); i++) {
-        ss << scaled_shape[i] << ",";
-    }
-    std::cout << "scaled: " << scale << "," << ss.str() << std::endl;
     uchar *raw_data = static_cast<uchar*>(calloc(get_count(scaled_shape), sizeof(uchar)));
     size_t pixels_per_tag = scaled_shape[2]*scaled_shape[3];
     for(size_t i = 0; i < batch_size; i++) {
         const GeneratedGrid & grid = grids.at(i);
         GeneratedGrid gg = grid.scale(scale);
-        CHECK(i*pixels_per_tag < get_count(scaled_shape));
+        assert(i*pixels_per_tag < get_count(scaled_shape));
         cv::Mat mat(scaled_shape[2], scaled_shape[3], CV_8UC1, raw_data + i*pixels_per_tag);
         artist.draw(gg, mat);
-        CHECK(mat.refcount == nullptr);
+        assert(mat.refcount == nullptr);
     }
     return newPyArrayOwnedByNumpy(scaled_shape, NPY_UBYTE, raw_data);
 }
@@ -104,8 +99,8 @@ py::tuple generateBatch(GridGenerator & gen, GridArtist & artist, size_t batch_s
     }
     py::list return_py_objs;
     for(auto & scale : scales) {
-        return_py_objs.append(py::handle<>(generateBatchScaled(gen, artist, batch_size,
-                                                grids, shape, scale)));
+        return_py_objs.append(py::handle<>(
+            generateBatchScaled(artist, batch_size, grids, shape, scale)));
     }
     return_py_objs.append(py::handle<>(newPyArrayOwnedByNumpy(labels_shape, NPY_FLOAT, raw_labels)));
     return_py_objs.append(py::handle<>(newPyArrayOwnedByNumpy(grid_params_shape, NPY_DOUBLE, raw_grid_params)));

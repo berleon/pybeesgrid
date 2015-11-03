@@ -37,12 +37,7 @@ else()
         SOURCE_DIR "${CMAKECONFIG_PATH}")
 endif()
 
-set(CAFFE_COMMIT "285cad9a74d5ab85596369c17b93262780aacdf7")
-set(CAFFE_GIT_REPO "https://github.com/berleon/caffe")
-set(USE_DEEPLOCALIZER 1)
-set(BLAS Open CACHE STRING "Use openblas")
-set(BUILD_python Off)
-set(BUILD_python_layer Off)
+set(USE_DEEPLOCALIZER OFF)
 set(BIOTRACKER_BUILD_TESTS OFF CACHE BOOL "Don't build biotrackers tests")
 
 include_pipeline("d5d8090a017867a53ac0ce02ead04a55cea933c8")
@@ -64,15 +59,12 @@ find_package(Threads REQUIRED)
 find_package(PythonLibs 3 REQUIRED)
 find_package(Boost COMPONENTS system filesystem serialization python3 program_options REQUIRED)
 find_package(LMDB REQUIRED)
-find_package(CUDA REQUIRED)
 find_package(gflags REQUIRED)
 
 include_directories(
     SYSTEM ${CATCH_INCLUDE_DIR}
     SYSTEM ${OpenCV_INCLUDE_DIRS}
     SYSTEM ${LMDB_INCLUDE_DIRS}
-    SYSTEM ${CUDA_INCLUDE_DIRS}
-    SYSTEM ${DEEP_CLASSIFIER_INCLUDE_DIR}
 )
 
 set(libs
@@ -81,7 +73,6 @@ set(libs
     ${CMAKE_THREAD_LIBS_INIT}
     ${PYTHON_LIBRARIES}
     ${LMDB_LIBRARIES}
-    ${CUDA_LIBRARIES}
     ${CPM_LIBRARIES}
 )
 
