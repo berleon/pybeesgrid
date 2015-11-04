@@ -108,7 +108,7 @@ PyObject * drawGridsParallel(
     if (nb_cpus == 0) {
         nb_cpus = 1;
     }
-    uchar *raw_data = static_cast<uchar*>(calloc(get_count(scaled_shape), sizeof(uchar)));
+    uchar *raw_data = static_cast<uchar*>(malloc(get_count(scaled_shape) * sizeof(uchar)));
     const size_t batch_size = grids.size();
     std::vector<std::thread> threads;
     const size_t part = batch_size / nb_cpus;
@@ -180,9 +180,9 @@ py::tuple generateBatch(GridGenerator & gen, const GridArtist & artist, const si
     std::array<npy_intp, 2> labels_shape{static_cast<npy_intp>(batch_size), Grid::NUM_MIDDLE_CELLS};
     static const size_t n_params = 6;
     std::array<npy_intp, 2> grid_params_shape{static_cast<npy_intp>(batch_size), n_params};
-    float *raw_labels = static_cast<float*>(calloc(get_count(labels_shape), sizeof(float)));
+    float *raw_labels = static_cast<float*>(malloc(get_count(labels_shape)*sizeof(float)));
     double *raw_grid_params = static_cast<double*>(
-            calloc(get_count(grid_params_shape), sizeof(double)));
+            malloc(get_count(grid_params_shape) * sizeof(double)));
     float *label_ptr = raw_labels;
     double *grid_params_ptr = raw_grid_params;
 
@@ -235,7 +235,7 @@ private:
     PyObject * imagesToPyArray(std::vector<cv::Mat> images, size_t batch_size) {
         std::array<npy_intp, 4> images_shape{static_cast<npy_intp>(batch_size), 1, TAG_SIZE, TAG_SIZE};
         size_t image_count = get_count<4>(images_shape);
-        uchar *raw_img_data = static_cast<uchar*>(calloc(image_count, sizeof(uchar)));
+        uchar *raw_img_data = static_cast<uchar*>(malloc(image_count * sizeof(uchar)));
         uchar *iter_ptr = raw_img_data;
         for(auto & mat : images) {
             for(long j = 0; j < mat.rows; j++) {
@@ -249,7 +249,7 @@ private:
     PyObject * labelsToPyArray(std::vector<std::vector<float>> labels, size_t batch_size) {
         std::array<npy_intp, 2> labels_shape{static_cast<npy_intp>(batch_size), Grid::NUM_MIDDLE_CELLS};
         size_t labels_count = get_count<2>(labels_shape);
-        float *raw_label_data = static_cast<float*>(calloc(labels_count, sizeof(float)));
+        float *raw_label_data = static_cast<float*>(malloc(labels_count * sizeof(float)));
         float *label_ptr = raw_label_data;
         for(auto & label : labels) {
             memcpy(label_ptr, &label[0], label.size()*sizeof(float));
