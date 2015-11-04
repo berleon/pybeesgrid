@@ -47,7 +47,7 @@ std::vector<N> pylistToVec(py::list pylist) {
     return vec;
 }
 
-void setGridParams(const GeneratedGrid & grid, double * &ptr) {
+inline void setGridParams(const GeneratedGrid & grid, double * &ptr) {
     *ptr = grid.getZRotation(); ++ptr;
     *ptr = grid.getYRotation(); ++ptr;
     *ptr = grid.getXRotation(); ++ptr;
@@ -73,15 +73,13 @@ private:
 };
 
 void drawGridsParallelWorkFn(std::unique_ptr<GridArtist> artist,
-                             std::vector<GeneratedGrid>::const_iterator &&grid_begin,
-                             std::vector<GeneratedGrid>::const_iterator &&grid_end,
+                             const std::vector<GeneratedGrid> grids,
                              const shape4d_t scaled_shape,
                              uchar *raw_data,
                              double scale) {
     const size_t pixels_per_tag = scaled_shape[2]*scaled_shape[3];
     size_t i = 0;
-    for(auto grid_iter = grid_begin; grid_iter != grid_end; grid_iter++) {
-        const GeneratedGrid & grid = *grid_iter;
+    for(const auto & grid : grids) {
         GeneratedGrid gg = grid.scale(scale);
         cv::Mat mat(scaled_shape[2], scaled_shape[3], CV_8UC1, raw_data + i*pixels_per_tag);
         artist->draw(gg, mat);
@@ -91,7 +89,7 @@ void drawGridsParallelWorkFn(std::unique_ptr<GridArtist> artist,
 
 PyObject * drawGridsParallel(
         const GridArtist &artist,
-        const std::vector<GeneratedGrid> &grids,
+        const std::vector<std::vector<GeneratedGrid>> &grids_vecs,
         const shape4d_t shape,
         double scale
 ) {
@@ -104,25 +102,14 @@ PyObject * drawGridsParallel(
     }
     const size_t pixels_per_tag = scaled_shape[2]*scaled_shape[3];
 
-    size_t nb_cpus = 2*std::thread::hardware_concurrency();
-    if (nb_cpus == 0) {
-        nb_cpus = 1;
-    }
     uchar *raw_data = static_cast<uchar*>(malloc(get_count(scaled_shape) * sizeof(uchar)));
-    const size_t batch_size = grids.size();
     std::vector<std::thread> threads;
-    const size_t part = batch_size / nb_cpus;
-    for (size_t i = 0; i < nb_cpus; i++) {
-        const size_t start = part * i;
-        size_t end;
-        if (i + 1 == nb_cpus) {
-            end = batch_size;
-        } else {
-            end = start + part;
-        }
+    size_t start = 0;
+    for (size_t i = 0; i < grids_vecs.size(); i++) {
         uchar * raw_data_offset = raw_data + start*pixels_per_tag;
-        threads.push_back(std::thread(&drawGridsParallelWorkFn, artist.clone(), grids.cbegin() + start,
-                    grids.cbegin() + end, scaled_shape, raw_data_offset, scale));
+        auto & grids = grids_vecs.at(i);
+        threads.push_back(std::thread(&drawGridsParallelWorkFn, artist.clone(), grids, scaled_shape, raw_data_offset, scale));
+        start += grids.size();
     }
     for(auto & t : threads) {
         t.join();
@@ -133,31 +120,26 @@ PyObject * drawGridsParallel(
 void generateGridsParallelWorkFn(
         std::unique_ptr<GridGenerator> gen,
         const size_t nb_todo,
-        std::vector<GeneratedGrid> &grids,
-        std::mutex & grids_mutex)
+        std::vector<GeneratedGrid> &grids)
 {
     for(size_t i = 0; i < nb_todo; i++) {
-        auto gg = gen->randomGrid();
-        grids_mutex.lock();
-        grids.emplace_back(std::move(gg));
-        grids_mutex.unlock();
+        grids.emplace_back(gen->randomGrid());
     }
 }
 
 void generateGridsParallel(
         GridGenerator &gen,
         const size_t batch_size,
-        std::vector<GeneratedGrid> &grids
+        std::vector<std::vector<GeneratedGrid>> &grids_vecs
 ) {
     ScopedGILRelease gil_release;
-    std::mutex grid_mutex;
-
-    size_t nb_cpus = static_cast<size_t>(1.5*std::thread::hardware_concurrency());
-    if (nb_cpus == 0) {
-        nb_cpus = 1;
-    }
+    size_t nb_cpus = 2*std::thread::hardware_concurrency();
+    if (nb_cpus == 0) { nb_cpus = 1; }
     std::vector<std::thread> threads;
     const size_t part = batch_size / nb_cpus;
+    for (size_t i = 0; i < nb_cpus; i++) {
+        grids_vecs.push_back(std::vector<GeneratedGrid>());
+    }
     for (size_t i = 0; i < nb_cpus; i++) {
         const size_t start = part * i;
         size_t end;
@@ -168,7 +150,7 @@ void generateGridsParallel(
         }
         const size_t nb_todo = end - start;
         threads.push_back(std::thread(&generateGridsParallelWorkFn, gen.clone(),
-                                      nb_todo, std::ref(grids), std::ref(grid_mutex)));
+                                      nb_todo, std::ref(grids_vecs.at(i))));
     }
     for(auto & t : threads) {
         t.join();
@@ -186,20 +168,21 @@ py::tuple generateBatch(GridGenerator & gen, const GridArtist & artist, const si
     float *label_ptr = raw_labels;
     double *grid_params_ptr = raw_grid_params;
 
-    std::vector<GeneratedGrid> grids;
-    generateGridsParallel(gen, batch_size, grids);
-    assert(grids.size() == batch_size);
+    std::vector<std::vector<GeneratedGrid>> grids_vecs;
+    generateGridsParallel(gen, batch_size, grids_vecs);
 
-    for(auto & gg : grids) {
-        auto label = gg.getLabelAsVector<float>();
-        memcpy(label_ptr, &label[0], label.size()*sizeof(float));
-        label_ptr += label.size();
-        setGridParams(gg, grid_params_ptr);
+    for(auto & grids : grids_vecs) {
+        for(auto & gg : grids) {
+            auto label = gg.getLabelAsVector<float>();
+            memcpy(label_ptr, &label[0], label.size()*sizeof(float));
+            label_ptr += label.size();
+            setGridParams(gg, grid_params_ptr);
+        }
     }
     py::list return_py_objs;
     for(auto & scale : scales) {
         return_py_objs.append(py::handle<>(
-                drawGridsParallel(artist, grids, shape, scale)));
+                drawGridsParallel(artist, grids_vecs, shape, scale)));
     }
     return_py_objs.append(py::handle<>(newPyArrayOwnedByNumpy(labels_shape, NPY_FLOAT, raw_labels)));
     return_py_objs.append(py::handle<>(newPyArrayOwnedByNumpy(grid_params_shape, NPY_DOUBLE, raw_grid_params)));
