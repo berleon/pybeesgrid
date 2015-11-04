@@ -104,7 +104,7 @@ PyObject * drawGridsParallel(
     }
     const size_t pixels_per_tag = scaled_shape[2]*scaled_shape[3];
 
-    size_t nb_cpus = std::thread::hardware_concurrency();
+    size_t nb_cpus = 2*std::thread::hardware_concurrency();
     if (nb_cpus == 0) {
         nb_cpus = 1;
     }
@@ -152,7 +152,7 @@ void generateGridsParallel(
     ScopedGILRelease gil_release;
     std::mutex grid_mutex;
 
-    size_t nb_cpus = std::thread::hardware_concurrency();
+    size_t nb_cpus = static_cast<size_t>(1.5*std::thread::hardware_concurrency());
     if (nb_cpus == 0) {
         nb_cpus = 1;
     }
