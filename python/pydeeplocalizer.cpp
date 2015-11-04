@@ -9,6 +9,7 @@
 #include <GroundTruthDataLoader.h>
 #include <iomanip>
 #include <thread>
+#include <mutex>
 
 namespace py = boost::python;
 using namespace deepdecoder;
@@ -120,7 +121,7 @@ PyObject * drawGridsParallel(
             end = start + part;
         }
         uchar * raw_data_offset = raw_data + start*pixels_per_tag;
-        threads.push_back(std::thread(drawGridsParallelWorkFn, artist.clone(), grids.cbegin() + start,
+        threads.push_back(std::thread(&drawGridsParallelWorkFn, artist.clone(), grids.cbegin() + start,
                     grids.cbegin() + end, scaled_shape, raw_data_offset, scale));
     }
     for(auto & t : threads) {
@@ -129,7 +130,50 @@ PyObject * drawGridsParallel(
     return newPyArrayOwnedByNumpy(scaled_shape, NPY_UBYTE, raw_data);
 }
 
+void generateGridsParallelWorkFn(
+        std::unique_ptr<GridGenerator> gen,
+        const size_t nb_todo,
+        std::vector<GeneratedGrid> &grids,
+        std::mutex & grids_mutex)
+{
+    for(size_t i = 0; i < nb_todo; i++) {
+        auto gg = gen->randomGrid();
+        grids_mutex.lock();
+        grids.emplace_back(std::move(gg));
+        grids_mutex.unlock();
+    }
+}
 
+void generateGridsParallel(
+        const GridGenerator &gen,
+        const size_t batch_size,
+        std::vector<GeneratedGrid> &grids
+) {
+    ScopedGILRelease gil_release;
+    std::mutex grid_mutex;
+
+    size_t nb_cpus = std::thread::hardware_concurrency();
+    if (nb_cpus == 0) {
+        nb_cpus = 1;
+    }
+    std::vector<std::thread> threads;
+    const size_t part = batch_size / nb_cpus;
+    for (size_t i = 0; i < nb_cpus; i++) {
+        const size_t start = part * i;
+        size_t end;
+        if (i + 1 == nb_cpus) {
+            end = batch_size;
+        } else {
+            end = start + part;
+        }
+        const size_t nb_todo = end - start;
+        threads.push_back(std::thread(&generateGridsParallelWorkFn, gen.clone(),
+                                      nb_todo, std::ref(grids), std::ref(grid_mutex)));
+    }
+    for(auto & t : threads) {
+        t.join();
+    }
+}
 py::tuple generateBatch(GridGenerator & gen, const GridArtist & artist, const size_t batch_size, py::list py_scales) {
     auto scales = pylistToVec<double>(py_scales);
     const shape4d_t shape{static_cast<npy_intp>(batch_size), 1, TAG_SIZE, TAG_SIZE};
@@ -143,12 +187,13 @@ py::tuple generateBatch(GridGenerator & gen, const GridArtist & artist, const si
     double *grid_params_ptr = raw_grid_params;
 
     std::vector<GeneratedGrid> grids;
-    for(size_t i = 0; i < batch_size; i++) {
-        auto gg = gen.randomGrid();
+    generateGridsParallel(gen, batch_size, grids);
+    assert(grids.size() == batch_size);
+
+    for(auto & gg : grids) {
         auto label = gg.getLabelAsVector<float>();
         memcpy(label_ptr, &label[0], label.size()*sizeof(float));
         label_ptr += label.size();
-        grids.emplace_back(std::move(gg));
         setGridParams(gg, grid_params_ptr);
     }
     py::list return_py_objs;

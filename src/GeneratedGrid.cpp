@@ -179,4 +179,13 @@ void BlackWhiteArtist::_draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2
 }
 
 
+std::unique_ptr<GridGenerator> GridGenerator::clone() const {
+    std::unique_ptr<GridGenerator> gen = std::make_unique<GridGenerator>();
+    gen->setCenter(_Center.first, _Center.second);
+    gen->setPitchAngle(_PitchAngle.first, _PitchAngle.second);
+    gen->setRollAngle(_RollAngle.first, _RollAngle.second);
+    gen->setYawAngle(_YawAngle.first, _YawAngle.second);
+    gen->setRadius(_Radius.first, _Radius.second);
+    return gen;
+}
 }

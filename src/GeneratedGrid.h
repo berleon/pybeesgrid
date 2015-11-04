@@ -86,6 +86,8 @@ public:
     UNIFORM_REAL_DISTRIBUTION_MEMBER(RollAngle)
     UNIFORM_INT_DISTRIBUTION_MEMBER(Radius)
     NORMAL_DISTRIBUTION_MEMBER(Center)
+public:
+    std::unique_ptr<GridGenerator> clone() const;
 private:
     Grid::idarray_t generateID();
     std::mt19937_64 _re;
