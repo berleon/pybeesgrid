@@ -16,12 +16,15 @@ from .. import TAG_SIZE, NUM_CELLS
 from ..generate_grids import batches as gen_grid_batches
 from ..gt_grids import batches as gt_batches
 
+from timeit import Timer
+
 
 def test_generate_grids():
     bs = 64
     grids, labels = next(gen_grid_batches(bs))
     assert grids.shape == (bs, 1, TAG_SIZE, TAG_SIZE)
     assert labels.shape == (bs, NUM_CELLS)
+
 
 def test_generate_grids_scaled():
     bs = 64
@@ -31,6 +34,7 @@ def test_generate_grids_scaled():
     assert grids_025.shape == (bs, 1, TAG_SIZE//4, TAG_SIZE//4)
     assert labels.shape == (bs, NUM_CELLS)
 
+
 def test_gt_loader():
     bs = 64
     gt_files = ["../../src/test/testdata/Cam_0_20140804152006_3.tdat"] * 3
@@ -38,3 +42,11 @@ def test_gt_loader():
         print(TAG_SIZE)
         assert grids.shape == (bs, 1, TAG_SIZE, TAG_SIZE)
         assert labels.shape == (bs, NUM_CELLS)
+
+
+def test_benchmark():
+    bs = 6400
+    n = 10
+    t = Timer(lambda: next(gen_grid_batches(bs)))
+    print("need {:.5f}s for {} grids".format(t.timeit(n) / n, bs))
+
