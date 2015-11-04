@@ -145,7 +145,7 @@ void generateGridsParallelWorkFn(
 }
 
 void generateGridsParallel(
-        const GridGenerator &gen,
+        GridGenerator &gen,
         const size_t batch_size,
         std::vector<GeneratedGrid> &grids
 ) {

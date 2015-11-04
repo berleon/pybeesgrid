@@ -80,6 +80,7 @@ private: \
 class GridGenerator {
 public:
     GridGenerator();
+    GridGenerator(unsigned long seed);
     GeneratedGrid randomGrid();
     UNIFORM_REAL_DISTRIBUTION_MEMBER(YawAngle)
     UNIFORM_REAL_DISTRIBUTION_MEMBER(PitchAngle)
@@ -87,7 +88,7 @@ public:
     UNIFORM_INT_DISTRIBUTION_MEMBER(Radius)
     NORMAL_DISTRIBUTION_MEMBER(Center)
 public:
-    std::unique_ptr<GridGenerator> clone() const;
+    std::unique_ptr<GridGenerator> clone();
 private:
     Grid::idarray_t generateID();
     std::mt19937_64 _re;
