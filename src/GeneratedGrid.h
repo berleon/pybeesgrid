@@ -100,10 +100,10 @@ public:
         cv::Point2i center(img.rows/2, img.cols/2);
         this->_draw(grid, img, center);
     }
-    inline void draw(const GeneratedGrid & grid, cv::Mat & img, cv::Point2i center) {
+    inline void draw(const GeneratedGrid & grid, cv::Mat & img, cv::Point2i center){
         this->_draw(grid, img, center);
     }
-
+    virtual std::unique_ptr<GridArtist> clone() const = 0 ;
     cv::Mat draw(const GeneratedGrid & grid);
     virtual ~GridArtist() = default;
 protected:
@@ -113,6 +113,10 @@ protected:
 class BlackWhiteArtist : public GridArtist {
 public:
     virtual ~BlackWhiteArtist() = default;
+
+    virtual std::unique_ptr<GridArtist> clone() const {
+        return std::make_unique<BlackWhiteArtist>();
+    }
 protected:
     virtual void _draw(const GeneratedGrid & grid, cv::Mat & img, cv::Point2i center);
 };
@@ -124,6 +128,9 @@ class BadGridArtist : public GridArtist {
     UNIFORM_INT_DISTRIBUTION_MEMBER(Background)
 public:
     BadGridArtist();
+    virtual std::unique_ptr<GridArtist> clone() const {
+        return std::make_unique<BadGridArtist>();
+    }
     virtual ~BadGridArtist() = default;
 protected:
     virtual void _draw(const GeneratedGrid & grid, cv::Mat & img, cv::Point2i center);
@@ -177,9 +184,13 @@ const unsigned char MASK_INDICIES[] = {
 class MaskGridArtist : public GridArtist{
 public:
     virtual ~MaskGridArtist() = default;
+    virtual std::unique_ptr<GridArtist> clone() const {
+        return std::make_unique<MaskGridArtist>();
+    }
+
 protected:
     virtual void _draw(const GeneratedGrid & grid, cv::Mat & img, cv::Point2i center);
 private:
-    unsigned char maskForTribool(size_t cell_idx, boost::logic::tribool cell_value);
+    unsigned char maskForTribool(size_t cell_idx, boost::logic::tribool cell_value) const;
 };
 }

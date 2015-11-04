@@ -8,6 +8,7 @@
 #include <numpy/ndarrayobject.h>
 #include <GroundTruthDataLoader.h>
 #include <iomanip>
+#include <thread>
 
 namespace py = boost::python;
 using namespace deepdecoder;
@@ -53,30 +54,83 @@ void setGridParams(const GeneratedGrid & grid, double * &ptr) {
     *ptr = grid.getCenter().y; ++ptr;
     *ptr = grid.getRadius(); ++ptr;
 }
+class ScopedGILRelease
+{
+public:
+    inline ScopedGILRelease()
+    {
+        m_thread_state = PyEval_SaveThread();
+    }
 
-PyObject * generateBatchScaled(GridArtist & artist, size_t batch_size,
-                    const std::vector<GeneratedGrid> & grids,
-                    const shape4d_t shape,
-                    double scale) {
+    inline ~ScopedGILRelease()
+    {
+        PyEval_RestoreThread(m_thread_state);
+        m_thread_state = NULL;
+    }
+private:
+    PyThreadState * m_thread_state;
+};
+
+void drawGridsParallelWorkFn(std::unique_ptr<GridArtist> artist,
+                             std::vector<GeneratedGrid>::const_iterator &&grid_begin,
+                             std::vector<GeneratedGrid>::const_iterator &&grid_end,
+                             const shape4d_t scaled_shape,
+                             uchar *raw_data,
+                             double scale) {
+    const size_t pixels_per_tag = scaled_shape[2]*scaled_shape[3];
+    size_t i = 0;
+    for(auto grid_iter = grid_begin; grid_iter != grid_end; grid_iter++) {
+        const GeneratedGrid & grid = *grid_iter;
+        GeneratedGrid gg = grid.scale(scale);
+        cv::Mat mat(scaled_shape[2], scaled_shape[3], CV_8UC1, raw_data + i*pixels_per_tag);
+        artist->draw(gg, mat);
+        ++i;
+    }
+}
+
+PyObject * drawGridsParallel(
+        const GridArtist &artist,
+        const std::vector<GeneratedGrid> &grids,
+        const shape4d_t shape,
+        double scale
+) {
+    ScopedGILRelease gil_release;
+
     shape4d_t scaled_shape = shape;
     for(size_t i = 2; i < shape.size(); i++) {
         int dim = shape.at(i);
         scaled_shape[i] = npy_intp(round(dim*scale));
     }
+    const size_t pixels_per_tag = scaled_shape[2]*scaled_shape[3];
+
+    size_t nb_cpus = std::thread::hardware_concurrency();
+    if (nb_cpus == 0) {
+        nb_cpus = 1;
+    }
     uchar *raw_data = static_cast<uchar*>(calloc(get_count(scaled_shape), sizeof(uchar)));
-    size_t pixels_per_tag = scaled_shape[2]*scaled_shape[3];
-    for(size_t i = 0; i < batch_size; i++) {
-        const GeneratedGrid & grid = grids.at(i);
-        GeneratedGrid gg = grid.scale(scale);
-        assert(i*pixels_per_tag < get_count(scaled_shape));
-        cv::Mat mat(scaled_shape[2], scaled_shape[3], CV_8UC1, raw_data + i*pixels_per_tag);
-        artist.draw(gg, mat);
-        assert(mat.refcount == nullptr);
+    const size_t batch_size = grids.size();
+    std::vector<std::thread> threads;
+    const size_t part = batch_size / nb_cpus;
+    for (size_t i = 0; i < nb_cpus; i++) {
+        const size_t start = part * i;
+        size_t end;
+        if (i + 1 == nb_cpus) {
+            end = batch_size;
+        } else {
+            end = start + part;
+        }
+        uchar * raw_data_offset = raw_data + start*pixels_per_tag;
+        threads.push_back(std::thread(drawGridsParallelWorkFn, artist.clone(), grids.cbegin() + start,
+                    grids.cbegin() + end, scaled_shape, raw_data_offset, scale));
+    }
+    for(auto & t : threads) {
+        t.join();
     }
     return newPyArrayOwnedByNumpy(scaled_shape, NPY_UBYTE, raw_data);
 }
 
-py::tuple generateBatch(GridGenerator & gen, GridArtist & artist, size_t batch_size, py::list py_scales) {
+
+py::tuple generateBatch(GridGenerator & gen, const GridArtist & artist, const size_t batch_size, py::list py_scales) {
     auto scales = pylistToVec<double>(py_scales);
     const shape4d_t shape{static_cast<npy_intp>(batch_size), 1, TAG_SIZE, TAG_SIZE};
     std::array<npy_intp, 2> labels_shape{static_cast<npy_intp>(batch_size), Grid::NUM_MIDDLE_CELLS};
@@ -100,7 +154,7 @@ py::tuple generateBatch(GridGenerator & gen, GridArtist & artist, size_t batch_s
     py::list return_py_objs;
     for(auto & scale : scales) {
         return_py_objs.append(py::handle<>(
-            generateBatchScaled(artist, batch_size, grids, shape, scale)));
+                drawGridsParallel(artist, grids, shape, scale)));
     }
     return_py_objs.append(py::handle<>(newPyArrayOwnedByNumpy(labels_shape, NPY_FLOAT, raw_labels)));
     return_py_objs.append(py::handle<>(newPyArrayOwnedByNumpy(grid_params_shape, NPY_DOUBLE, raw_grid_params)));

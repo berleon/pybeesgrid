@@ -102,7 +102,7 @@ void MaskGridArtist::_draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2i 
     cv::fillConvexPoly(img, inner_black_semicircle, MASK::INNER_BLACK_SEMICIRCLE);
 }
 
-unsigned char MaskGridArtist::maskForTribool(size_t cell_idx, boost::logic::tribool cell_value)
+unsigned char MaskGridArtist::maskForTribool(size_t cell_idx, boost::logic::tribool cell_value) const
 {
     if(cell_value) {
         return MASK::CELL_0_WHITE + cell_idx;
@@ -177,5 +177,6 @@ void BlackWhiteArtist::_draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2
     cv::fillConvexPoly(img, inner_white_semicircle, white);
     cv::fillConvexPoly(img, inner_black_semicircle, black);
 }
+
 
 }
