@@ -3,6 +3,8 @@
 
 #include <opencv/highgui.h>
 #include "../GeneratedGrid.h"
+#include "../GridArtist.h"
+#include "../GridGenerator.h"
 #include <chrono>
 #include <catch.hpp>
 

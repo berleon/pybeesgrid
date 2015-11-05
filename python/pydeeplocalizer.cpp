@@ -3,6 +3,8 @@
 
 #include <deepdecoder.h>
 #include <GeneratedGrid.h>
+#include <GridArtist.h>
+#include <GridGenerator.h>
 #include <boost/python.hpp>
 #include <numpy/ndarraytypes.h>
 #include <numpy/ndarrayobject.h>
