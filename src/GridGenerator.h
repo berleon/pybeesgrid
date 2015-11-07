@@ -30,16 +30,31 @@ public:
     GridGenerator();
     GridGenerator(unsigned long seed);
     GeneratedGrid randomGrid();
-    UNIFORM_REAL_DISTRIBUTION_MEMBER(YawAngle)
-    UNIFORM_REAL_DISTRIBUTION_MEMBER(PitchAngle)
-    UNIFORM_REAL_DISTRIBUTION_MEMBER(RollAngle)
-    UNIFORM_INT_DISTRIBUTION_MEMBER(Radius)
-    NORMAL_DISTRIBUTION_MEMBER(Center)
-public:
     std::unique_ptr<GridGenerator> clone();
+
+    inline void setRollAngle(double mean, double lambda) {
+        _RollAngle = std::make_pair(mean, lambda);
+        _roll_angle_dis = std::exponential_distribution<>(lambda);
+    }
+    inline std::pair<double, double> getRollAngle() {
+        return _RollAngle;
+    }
+    inline double sampleRollAngle() {
+        const double mean = _RollAngle.first;
+        const double sign = _coin_dis(_re) ? -1 : 1;
+        return sign*_roll_angle_dis(_re)/2 - mean;
+    }
+
+    UNIFORM_REAL_DISTRIBUTION_MEMBER(YawAngle)
+    NORMAL_DISTRIBUTION_MEMBER(PitchAngle)
+
+    NORMAL_DISTRIBUTION_MEMBER(Radius)
+    NORMAL_DISTRIBUTION_MEMBER(Center)
 private:
     Grid::idarray_t generateID();
     std::mt19937_64 _re;
     std::bernoulli_distribution _coin_dis;
+    std::pair<double, double> _RollAngle;
+    std::exponential_distribution<> _roll_angle_dis;
 };
 }
