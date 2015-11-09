@@ -71,7 +71,12 @@ BlackWhiteArtist = pydd.BlackWhiteArtist
 MaskGridArtist = pydd.MaskGridArtist
 
 
-def batches(batch_size=64, generator=None, with_gird_params=False, artist=None, scales=[1.]):
+def batches(batch_size=64, generator=None, with_gird_params=False,
+            artist=None, scales=[1.]):
+    """
+    Returns a tuple with `(b_1, b_2, .., b_m, label, grid_params)`,
+    where `b_i` is the batch with scale `scales[i]`.
+    """
     if generator is None:
         generator = GridGenerator()
     if artist is None:
