@@ -109,7 +109,7 @@ void BlackWhiteArtist::_draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2
     const auto inner_white_semicircle = translate(coords2D.at(Grid::INDEX_INNER_WHITE_SEMICIRCLE), center);
     const auto inner_black_semicircle = translate(coords2D.at(Grid::INDEX_INNER_BLACK_SEMICIRCLE), center);
     const auto background_ring = translate(coords2D.at(Grid::INDEX_BACKGROUND_RING), center);
-    cv::fillConvexPoly(img, background_ring, 128);
+    cv::fillConvexPoly(img, background_ring, black);
     cv::fillConvexPoly(img, outer_white_ring, white);
     for (size_t i = Grid::INDEX_MIDDLE_CELLS_BEGIN; i < Grid::INDEX_MIDDLE_CELLS_BEGIN + Grid::NUM_MIDDLE_CELLS; ++i)
     {
