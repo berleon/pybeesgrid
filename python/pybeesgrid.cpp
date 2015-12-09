@@ -203,13 +203,18 @@ public:
         } else {
             repeat_enum = NO_REPEAT;
         }
-        boost::optional<dataset_t<float>> opt_batch = _gt_loader.batch(batch_size,
-                                                                       repeat_enum);
+        auto opt_batch = _gt_loader.batch(batch_size, repeat_enum);
         if(opt_batch) {
-            auto batch = opt_batch.get();
+            auto & batch = opt_batch.get();
+            std::cout << "imgs: " << batch.first.size() << ", grids: " << batch.second.size() << std::endl;
+            auto pyarr_images = imagesToPyArray(batch.first, batch_size);
+            auto pyarr_bits = gridToBitsPyArray(batch.second, batch_size);
+            auto pyarr_config = gridToConfigPyArray(batch.second, batch_size);
+
             return py::make_tuple(
-                    py::handle<>(imagesToPyArray(batch.first, batch_size)),
-                    py::handle<>(labelsToPyArray(batch.second, batch_size))
+                    py::handle<>(pyarr_images),
+                    py::handle<>(pyarr_bits),
+                    py::handle<>(pyarr_config)
             );
         } else {
             return py::object(py::handle<>(Py_None));
@@ -231,16 +236,37 @@ private:
         return newPyArrayOwnedByNumpy(images_shape, NPY_UBYTE, raw_img_data);
     }
 
-    PyObject * labelsToPyArray(std::vector<std::vector<float>> labels, size_t batch_size) {
-        std::array<npy_intp, 2> labels_shape{static_cast<npy_intp>(batch_size), Grid::NUM_MIDDLE_CELLS};
-        size_t labels_count = get_count<2>(labels_shape);
-        float *raw_label_data = static_cast<float*>(malloc(labels_count * sizeof(float)));
-        float *label_ptr = raw_label_data;
-        for(auto & label : labels) {
-            memcpy(label_ptr, &label[0], label.size()*sizeof(float));
-            label_ptr += label.size();
+    PyObject * gridToConfigPyArray(const std::vector<GroundTruthDatum> & grids, size_t batch_size) {
+        const static size_t nb_configs = 6;
+        std::array<npy_intp, 2> shape{static_cast<npy_intp>(batch_size), nb_configs};
+        size_t count = get_count<2>(shape);
+        std::cout << "[config] count: " << count * sizeof(float) << ", shp[0]: " << shape[0] << ", shp[1]: " << shape[1] << ", grids.size(): " << grids.size() << std::endl;
+        float *raw_data = static_cast<float*>(malloc(count * sizeof(float)));
+        float *ptr = raw_data;
+        for(const auto & grid : grids) {
+            *ptr = grid.z_rot; ++ptr;
+            *ptr = grid.y_rot; ++ptr;
+            *ptr = grid.x_rot; ++ptr;
+            *ptr = grid.x; ++ptr;
+            *ptr = grid.y; ++ptr;
+            *ptr = grid.radius; ++ptr;
         }
-        return newPyArrayOwnedByNumpy(labels_shape, NPY_FLOAT32, raw_label_data);
+        std::cout << "pointer diff: " << ptr - raw_data << std::endl;
+        return newPyArrayOwnedByNumpy(shape, NPY_FLOAT32, raw_data);
+    }
+
+    PyObject * gridToBitsPyArray(const std::vector<GroundTruthDatum> & grids, size_t batch_size) {
+        std::array<npy_intp, 2> shape{static_cast<npy_intp>(batch_size), Grid::NUM_MIDDLE_CELLS};
+        const size_t count = get_count<2>(shape);
+        std::cout << "[bits] count: " << count * sizeof(float) << ", shp[0]: " << shape[0] << ", shp[1]: " << shape[1] << ", grids.size(): " << grids.size() << std::endl;
+
+        float *raw_data = static_cast<float*>(malloc(count * sizeof(float)));
+        float *bits_ptr = raw_data;
+        for(const auto & grid : grids) {
+            // memcpy(bits_ptr, &grid.bits[0], grid.bits.size()*sizeof(float));
+            //bits_ptr += grid.bits.size();
+        }
+        return newPyArrayOwnedByNumpy(shape, NPY_FLOAT32, raw_data);
     }
 
     GroundTruthDataLoader<float> _gt_loader;

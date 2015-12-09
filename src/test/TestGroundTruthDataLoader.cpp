@@ -10,7 +10,7 @@ using namespace beesgrid;
 namespace io = boost::filesystem;
 
 
-TEST_CASE("CaffeEvaluator", "") {
+TEST_CASE("GroundTrouthDataLoader", "") {
     std::vector<std::string> gt_files{
         "testdata/Cam_0_20140804152006_3.tdat",
         "testdata/Cam_0_20140804152006_3.tdat",
@@ -23,7 +23,7 @@ TEST_CASE("CaffeEvaluator", "") {
     SECTION("it returns images and labels as batches") {
         io::remove_all("gt_loader_images");
         io::create_directories("gt_loader_images");
-        dataset_t<float> batch = data_loader.batch(batch_size).get();
+        gt_dataset_t batch = data_loader.batch(batch_size).get();
         REQUIRE(batch.first.size() == batch_size);
         REQUIRE(batch.second.size() == batch_size);
         cv::Mat big_image(rows*TAG_SIZE+rows-1, cols*TAG_SIZE+rows-1,
@@ -32,11 +32,11 @@ TEST_CASE("CaffeEvaluator", "") {
             for(size_t c = 0; c < cols; c++) {
                 size_t i = r*rows + c;
                 auto & mat = batch.first.at(i);
-                auto & label = batch.second.at(i);
+                auto & bits = batch.second.at(i).bits;
                 std::stringstream ss;
                 ss << "gt_loader_images/";
-                for(size_t j = 0; j < label.size(); j++) {
-                    ss << label.at(j) << '_';
+                for(size_t j = 0; j < bits.size(); j++) {
+                    ss << bits.at(j) << '_';
                 }
                 ss << ".png";
                 cv::imwrite(ss.str(), mat);

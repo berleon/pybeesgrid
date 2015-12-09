@@ -5,11 +5,13 @@ set(PYTHON_PKG_DIR ${CMAKE_CURRENT_BINARY_DIR}/package)
 
 add_library(pybeesgrid SHARED ${src})
 
-target_include_directories(pybeesgrid SYSTEM
-    PUBLIC "${CMAKE_SOURCE_DIR}/src"
-    PUBLIC ${PYTHON_INCLUDE_DIRS}
+include_directories(
+    SYSTEM PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../src"
+    SYSTEM ${PYTHON_INCLUDE_DIRS}
 )
+
 message(${PYTHON_LIBRARIES})
+
 target_link_libraries(pybeesgrid
         beesgrid)
 set_target_properties(pybeesgrid PROPERTIES PREFIX "" )

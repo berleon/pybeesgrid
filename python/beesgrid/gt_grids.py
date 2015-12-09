@@ -17,6 +17,12 @@ from . import pybeesgrid as pydd
 
 
 def batches(gt_files, batch_size=64, repeat=False):
+    """
+    Returns a `(images, id, config)` tuple, where `images` are the images of
+    the bees, `id` is a (batch_size, 12) matrix of the bees' ids and config is
+    a (batch_size, 6) matrix with the 'z_rotation', 'y_rotation', 'x_rotation',
+    'center_x', 'center_y' and 'radius' in this order.
+    """
     gt_loader = pydd.GTDataLoader(gt_files)
     while True:
         batch = gt_loader.batch(batch_size, repeat)

@@ -16,3 +16,8 @@ from .pybeesgrid import TAG_SIZE as CXX_TAG_SIZE
 
 TAG_SIZE = CXX_TAG_SIZE
 NUM_CELLS = 12
+
+CONFIG_LABELS = ('z_rotation', 'y_rotation', 'x_rotation',
+                 'center_x', 'center_y', 'radius')
+
+NUM_CONFIG = len(CONFIG_LABELS)
