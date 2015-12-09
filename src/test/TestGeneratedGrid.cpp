@@ -9,9 +9,9 @@
 #include <catch.hpp>
 
 // uncomment to show window with generated tags
-// #define VISUAL_TEST
+#define VISUAL_TEST
 
-using namespace deepdecoder;
+using namespace beesgrid;
 void drawGridsOnCvMat(
         const std::vector<GeneratedGrid> & grids,
         size_t size,

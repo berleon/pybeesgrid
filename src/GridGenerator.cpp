@@ -1,6 +1,6 @@
 
 #include "GridGenerator.h"
-namespace deepdecoder {
+namespace beesgrid {
 
 constexpr double to_radian(double degrees) {
     return (M_PI / 180) * degrees;

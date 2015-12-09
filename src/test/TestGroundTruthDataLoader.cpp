@@ -6,7 +6,7 @@
 #include <opencv/highgui.h>
 #include <GroundTruthDataLoader.h>
 
-using namespace deepdecoder;
+using namespace beesgrid;
 namespace io = boost::filesystem;
 
 

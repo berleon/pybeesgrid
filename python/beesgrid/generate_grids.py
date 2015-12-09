@@ -13,9 +13,9 @@
 # limitations under the License.
 #
 
-from . import pydeepdecoder as pydd
+from . import pybeesgrid as pydd
 
-from .pydeepdecoder import INNER_BLACK_SEMICIRCLE, CELL_0_BLACK, CELL_1_BLACK, \
+from .pybeesgrid import INNER_BLACK_SEMICIRCLE, CELL_0_BLACK, CELL_1_BLACK, \
      CELL_2_BLACK, CELL_3_BLACK, CELL_4_BLACK, CELL_5_BLACK, CELL_6_BLACK, \
      CELL_7_BLACK, CELL_8_BLACK, CELL_9_BLACK, CELL_10_BLACK, CELL_11_BLACK, \
      BACKGROUND_RING, IGNORE, CELL_0_WHITE, CELL_1_WHITE, CELL_2_WHITE, \

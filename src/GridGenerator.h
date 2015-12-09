@@ -2,7 +2,7 @@
 #pragma once
 
 #include <bits/unique_ptr.h>
-#include "deepdecoder.h"
+#include "beesgrid.h"
 #include "GeneratedGrid.h"
 
 #define DISTRIBUTION_MEMBER(NAME, DISTRIBUTION_T, TYPE) \
@@ -22,7 +22,7 @@ private: \
 #define UNIFORM_REAL_DISTRIBUTION_MEMBER(NAME) DISTRIBUTION_MEMBER(NAME, std::uniform_real_distribution<>, double)
 #define NORMAL_DISTRIBUTION_MEMBER(NAME) DISTRIBUTION_MEMBER(NAME, std::normal_distribution<>, double)
 
-namespace deepdecoder {
+namespace beesgrid {
 
 class GridGenerator {
 

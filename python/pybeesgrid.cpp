@@ -1,7 +1,7 @@
 #define PY_ARRAY_UNIQUE_SYMBOL generate_data_ARRAY_API
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
-#include <deepdecoder.h>
+#include <beesgrid.h>
 #include <GeneratedGrid.h>
 #include <GridArtist.h>
 #include <GridGenerator.h>
@@ -14,7 +14,7 @@
 #include <mutex>
 
 namespace py = boost::python;
-using namespace deepdecoder;
+using namespace beesgrid;
 
 template<size_t N>
 using shape_t = std::array<npy_intp, N>;
@@ -254,7 +254,7 @@ void * init_numpy() {
 #define ATTR(NAME) py::scope().attr(#NAME) = NAME
 #define ENUM_ATTR(NAME) py::scope().attr(#NAME) = size_t(NAME)
 
-BOOST_PYTHON_MODULE(pydeepdecoder)
+BOOST_PYTHON_MODULE(pybeesgrid)
 {
     init_numpy();
     py::def("generateBatch", generateBatch);

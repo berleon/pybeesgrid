@@ -7,7 +7,7 @@
 
 void noise(cv::Mat &mat);
 
-using namespace deepdecoder;
+using namespace beesgrid;
 
 void noise(cv::Mat & mat) {
     std::random_device rd;

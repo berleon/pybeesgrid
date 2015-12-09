@@ -1,7 +1,7 @@
 
-#include "deepdecoder.h"
+#include "beesgrid.h"
 
-namespace deepdecoder {
+namespace beesgrid {
 
 std::string getLabelsAsString(const Grid::idarray_t & id_arr) {
     std::stringstream ss;

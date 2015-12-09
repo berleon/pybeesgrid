@@ -3,9 +3,9 @@
 
 #include <pipeline/common/Grid.h>
 
-#include "deepdecoder.h"
+#include "beesgrid.h"
 
-namespace deepdecoder {
+namespace beesgrid {
 class GridGenerator;
 
 class GeneratedGrid : public Grid {
@@ -19,7 +19,7 @@ public:
         return triboolIDtoVector<Dtype>(_ID);
     }
     inline std::string getLabelsAsString() const {
-        return deepdecoder::getLabelsAsString(_ID);
+        return beesgrid::getLabelsAsString(_ID);
     }
     inline const std::vector<std::vector<cv::Point>> & getCoordinates2D() const {
         return _coordinates2D;

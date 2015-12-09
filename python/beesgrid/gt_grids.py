@@ -12,7 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .pydeepdecoder import TAG_SIZE as CXX_TAG_SIZE
 
-TAG_SIZE = CXX_TAG_SIZE
-NUM_CELLS = 12
+from . import pybeesgrid as pydd
+
+
+def batches(gt_files, batch_size=64, repeat=False):
+    gt_loader = pydd.GTDataLoader(gt_files)
+    while True:
+        batch = gt_loader.batch(batch_size, repeat)
+        if batch is None:
+            break
+        else:
+            yield batch
+

@@ -3,7 +3,7 @@
 #include <pipeline/common/Grid.h>
 #include <boost/logic/tribool.hpp>
 
-namespace deepdecoder {
+namespace beesgrid {
 
 std::vector<cv::Point> translate(const std::vector<cv::Point> points, const cv::Point &offset) {
     std::vector<cv::Point> translated_pts;

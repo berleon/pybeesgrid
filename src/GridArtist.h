@@ -3,7 +3,7 @@
 #include "GeneratedGrid.h"
 #include "GridGenerator.h"
 
-namespace deepdecoder {
+namespace beesgrid {
 
 class GridArtist {
 public:

@@ -5,7 +5,7 @@ cmake_policy(SET CMP0009 NEW)
 cmake_policy(SET CMP0012 NEW)
 cmake_policy(SET CMP0046 NEW)
 
-project(deepdecoder)
+project(pybeesgrid)
 
 #------------------------------------------------------------------------------
 # Required CPM Setup - no need to modify - See: https://github.com/iauns/cpm

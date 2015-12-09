@@ -1,6 +1,6 @@
 #pragma once
 
-#include "deepdecoder.h"
+#include "beesgrid.h"
 #include <cereal/archives/json.hpp>
 #include <biotracker/serialization/SerializationData.h>
 #include <pipeline/util/GroundTruthEvaluator.h>
@@ -8,7 +8,7 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 
-namespace deepdecoder {
+namespace beesgrid {
 
 enum GTRepeat {
     REPEAT,

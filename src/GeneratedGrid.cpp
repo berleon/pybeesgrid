@@ -1,6 +1,6 @@
 
 #include "GeneratedGrid.h"
-namespace deepdecoder {
+namespace beesgrid {
 
 GeneratedGrid::GeneratedGrid(Grid::idarray_t id, cv::Point2i center, double radius,
                              double angle_x, double angle_y, double angle_z) :
