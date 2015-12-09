@@ -21,7 +21,7 @@ from distutils.core import setup
 from distutils.extension import Extension
 
 setup(
-    name='deepdecoder',
-    packages=['deepdecoder'],
-    package_data={'deepdecoder': ['*.so']}
+    name='beesgrid',
+    packages=['beesgrid'],
+    package_data={'beesgrid': ['*.so']}
 )
