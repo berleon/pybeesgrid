@@ -40,8 +40,9 @@ endif()
 set(USE_DEEPLOCALIZER OFF)
 set(BIOTRACKER_BUILD_TESTS OFF CACHE BOOL "Don't build biotrackers tests")
 
+# use the background-ring branch
 include_pipeline("d5d8090a017867a53ac0ce02ead04a55cea933c8")
-include_biotracker_core("25d9e182c0b6403af09d9b252fda6955d43ec30d")
+include_biotracker_core("b7ffb0e9499df346191227e57d7f6daf98f3a394")
 
 CPM_AddModule("cpm_catch"
   GIT_REPOSITORY "https://github.com/bcachet/cpm-catch")
