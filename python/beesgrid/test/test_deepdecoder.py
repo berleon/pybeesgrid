@@ -11,12 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 
-from .. import TAG_SIZE, NUM_CELLS, NUM_CONFIG
+import scipy.misc
+
+from .. import TAG_SIZE, NUM_CELLS, NUM_CONFIG, CONFIG_LABELS, draw_grids
 from ..generate_grids import batches as gen_grid_batches
 from ..gt_grids import batches as gt_batches
 
 from timeit import Timer
+import numpy as np
 
 
 def test_generate_grids():
@@ -49,4 +53,23 @@ def test_benchmark():
     n = 10
     t = Timer(lambda: next(gen_grid_batches(bs)))
     print("need {:.5f}s for {} grids".format(t.timeit(n) / n, bs))
+
+
+def test_draw_grids():
+    bs = 64
+    bits = np.random.binomial(1, 0.5, (bs, NUM_CELLS)).astype(np.float32)
+    configs = np.zeros((bs, NUM_CONFIG), dtype=np.float32)
+    configs[:, CONFIG_LABELS.index('center_x')] = TAG_SIZE // 2
+    configs[:, CONFIG_LABELS.index('center_y')] = TAG_SIZE // 2
+    configs[:, CONFIG_LABELS.index('radius')] = 25
+    grids, = draw_grids(bits, configs)
+    print(grids.max())
+    print(grids[0, 0, 0, 0])
+    output_dir = "testout"
+    os.makedirs(output_dir, exist_ok=True)
+
+    print("grid shape: {}".format(grids.shape))
+    print("grid len: {}".format(len(grids)))
+    for i in range(len(grids)):
+        scipy.misc.imsave(output_dir + '/grid_{}.png'.format(i), grids[i, 0])
 

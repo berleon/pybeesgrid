@@ -6,8 +6,10 @@
 #include <GridArtist.h>
 #include <GridGenerator.h>
 #include <boost/python.hpp>
+#include <boost/python/numeric.hpp>
 #include <numpy/ndarraytypes.h>
 #include <numpy/ndarrayobject.h>
+
 #include <GroundTruthDataLoader.h>
 #include <iomanip>
 #include <thread>
@@ -158,6 +160,7 @@ void generateGridsParallel(
         t.join();
     }
 }
+
 py::tuple generateBatch(GridGenerator & gen, const GridArtist & artist, const size_t batch_size, py::list py_scales) {
     auto scales = pylistToVec<double>(py_scales);
     const shape4d_t shape{static_cast<npy_intp>(batch_size), 1, TAG_SIZE, TAG_SIZE};
@@ -190,6 +193,120 @@ py::tuple generateBatch(GridGenerator & gen, const GridArtist & artist, const si
     return_py_objs.append(py::handle<>(newPyArrayOwnedByNumpy(grid_params_shape, NPY_DOUBLE, raw_grid_params)));
     return py::tuple(return_py_objs);
 }
+
+void valueError(const std::string & msg) {
+        PyErr_SetString(PyExc_ValueError, msg.c_str());
+        py::throw_error_already_set();
+}
+
+void buildGridsFromNpArrWorkFn(
+        PyArrayObject * bits_and_config_ptr,
+        const size_t offset,
+        const size_t nb_todo,
+        std::vector<GeneratedGrid> &grids)
+{
+    for(size_t i = offset; i < offset + nb_todo; i++) {
+        Grid::idarray_t id;
+        int pos = 0;
+        for(size_t c = 0; c < Grid::NUM_MIDDLE_CELLS; c++) {
+            float cell = *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos));
+            ++pos;
+            if(cell == 1.) {
+                id[c] = true;
+            } else if(cell == 0) {
+                id[c] = false;
+            } else {
+                id[c] = boost::tribool::indeterminate_value;
+            }
+        }
+
+        double rot_x =  *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
+        double rot_y =  *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
+        double rot_z =  *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
+        float x =       *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
+        float y =       *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
+        double radius = *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
+        cv::Point2i center{static_cast<int>(x), static_cast<int>(y)};
+        std::cout << "[" <<  i << "]" <<
+                "rot_x"  << rot_x <<
+                "rot_y"  << rot_y  <<
+                "rot_z"  << rot_z  <<
+                "x"      << x      <<
+                "y"      << y      <<
+                "radius" << radius <<
+                "center" << center << std::endl;
+
+        grids.emplace_back(id, center, radius, rot_x, rot_y, rot_z);
+    }
+}
+
+void buildGridsFromNpArr(PyArrayObject * bits_and_config_ptr,
+                         const size_t batch_size,
+                         std::vector<std::vector<GeneratedGrid>> &grids_vecs) {
+    ScopedGILRelease gil_release;
+    size_t nb_cpus = 2*std::thread::hardware_concurrency();
+    if (nb_cpus == 0) { nb_cpus = 1; }
+    std::vector<std::thread> threads;
+    const size_t part = batch_size / nb_cpus;
+    for (size_t i = 0; i < nb_cpus; i++) {
+        grids_vecs.push_back(std::vector<GeneratedGrid>());
+    }
+    for (size_t i = 0; i < nb_cpus; i++) {
+        const size_t start = part * i;
+        size_t end;
+        if (i + 1 == nb_cpus) {
+            end = batch_size;
+        } else {
+            end = start + part;
+        }
+        const size_t nb_todo = end - start;
+        threads.push_back(std::thread(&buildGridsFromNpArrWorkFn, bits_and_config_ptr, start,
+                                      nb_todo, std::ref(grids_vecs.at(i))));
+    }
+    for(auto & t : threads) {
+        t.join();
+    }
+}
+
+py::tuple drawGrids(
+        py::numeric::array bits_and_configs,
+        const GridArtist & artist,
+        py::list py_scales) {
+    PyArrayObject* arr_ptr = reinterpret_cast<PyArrayObject*>(bits_and_configs.ptr());
+
+    int ndims = PyArray_NDIM(arr_ptr);
+    npy_intp * shape =  PyArray_SHAPE(arr_ptr);
+    if (ndims != 2) {
+        std::stringstream ss;
+        ss << "bits_and_configs has wrong number of dimensions, expected 2 found: " << ndims;
+        valueError(ss.str());
+    }
+    if (shape[1] != Grid::NUM_MIDDLE_CELLS + NUM_GRID_CONFIGS) {
+        std::stringstream ss;
+        ss << "bits_and_configs has wrong shape in the last dimension: " << shape[1] << " . Expected "
+                << Grid::NUM_MIDDLE_CELLS + NUM_GRID_CONFIGS;
+        valueError(ss.str());
+
+    }
+    const size_t batch_size = static_cast<size_t>(shape[0]);
+    std::cout << "bits_and_conig shape: (" << shape[0] << ", " << shape[1] << ", )" << std::endl;
+
+    auto scales = pylistToVec<double>(py_scales);
+
+    const shape4d_t out_shape{static_cast<npy_intp>(batch_size), 1, TAG_SIZE, TAG_SIZE};
+    static const size_t n_params = 6;
+
+    std::vector<std::vector<GeneratedGrid>> grids_vecs;
+    buildGridsFromNpArr(arr_ptr, batch_size, grids_vecs);
+
+    py::list return_py_objs;
+    for(auto & scale : scales) {
+        return_py_objs.append(py::handle<>(
+                drawGridsParallel(artist, grids_vecs, out_shape, scale)));
+    }
+    return py::tuple(return_py_objs);
+}
+
 
 class PyGTDataLoader {
 public:
@@ -263,8 +380,8 @@ private:
         float *raw_data = static_cast<float*>(malloc(count * sizeof(float)));
         float *bits_ptr = raw_data;
         for(const auto & grid : grids) {
-            // memcpy(bits_ptr, &grid.bits[0], grid.bits.size()*sizeof(float));
-            //bits_ptr += grid.bits.size();
+            memcpy(bits_ptr, &grid.bits[0], grid.bits.size()*sizeof(float));
+            bits_ptr += grid.bits.size();
         }
         return newPyArrayOwnedByNumpy(shape, NPY_FLOAT32, raw_data);
     }
@@ -284,6 +401,7 @@ BOOST_PYTHON_MODULE(pybeesgrid)
 {
     init_numpy();
     py::def("generateBatch", generateBatch);
+    py::def("drawGrids", drawGrids);
 
     ENUM_ATTR(INNER_BLACK_SEMICIRCLE);
     ENUM_ATTR(CELL_0_BLACK);

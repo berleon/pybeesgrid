@@ -3,12 +3,16 @@ file(GLOB src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
 
 set(PYTHON_PKG_DIR ${CMAKE_CURRENT_BINARY_DIR}/package)
 
-add_library(pybeesgrid SHARED ${src})
+find_package(PythonLibs 3 REQUIRED)
+find_package(Numpy REQUIRED)
 
 include_directories(
     SYSTEM PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/../src"
     SYSTEM ${PYTHON_INCLUDE_DIRS}
+    SYSTEM ${NUMPY_INCLUDE_DIR}
 )
+
+add_library(pybeesgrid SHARED ${src})
 
 message(${PYTHON_LIBRARIES})
 

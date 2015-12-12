@@ -13,6 +13,10 @@
 # limitations under the License.
 
 from .pybeesgrid import TAG_SIZE as CXX_TAG_SIZE
+from .pybeesgrid import GridGenerator, BadGridArtist, BlackWhiteArtist, MaskGridArtist
+from .pybeesgrid import drawGrids
+
+import numpy as np
 
 TAG_SIZE = CXX_TAG_SIZE
 NUM_CELLS = 12
@@ -21,3 +25,11 @@ CONFIG_LABELS = ('z_rotation', 'y_rotation', 'x_rotation',
                  'center_x', 'center_y', 'radius')
 
 NUM_CONFIG = len(CONFIG_LABELS)
+
+
+def draw_grids(bits: np.ndarray, configs: np.ndarray, scales=[1.], artist=None):
+    if artist is None:
+        artist = BlackWhiteArtist()
+
+    bits_and_config = np.concatenate((bits, configs), axis=1)
+    return drawGrids(bits_and_config, artist, scales)

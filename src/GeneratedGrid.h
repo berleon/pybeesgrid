@@ -10,8 +10,10 @@ class GridGenerator;
 
 class GeneratedGrid : public Grid {
 public:
-    virtual ~GeneratedGrid() override = default;
+    explicit GeneratedGrid(Grid::idarray_t id, cv::Point2i center, double radius,
+                           double angle_x, double angle_y, double angle_z);
 
+    virtual ~GeneratedGrid() override = default;
     int getLabelAsInt() const;
 
     template<typename Dtype>
@@ -25,10 +27,6 @@ public:
         return _coordinates2D;
     }
     GeneratedGrid scale(double factor) const;
-    friend class GridGenerator;
-protected:
-    explicit GeneratedGrid(Grid::idarray_t id, cv::Point2i center, double radius,
-                           double angle_x, double angle_y, double angle_z);
 private:
     cv::Scalar tribool2Color(const boost::logic::tribool &tribool) const;
 };
