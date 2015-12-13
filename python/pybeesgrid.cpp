@@ -5,6 +5,7 @@
 #include <GeneratedGrid.h>
 #include <GridArtist.h>
 #include <GridGenerator.h>
+#include <pipeline/common/Grid.h>
 #include <boost/python.hpp>
 #include <boost/python/numeric.hpp>
 #include <numpy/ndarraytypes.h>
@@ -164,7 +165,7 @@ void generateGridsParallel(
 py::list generateBatch(GridGenerator & gen, const GridArtist & artist, const size_t batch_size, py::list py_scales) {
     auto scales = vectorFromPyList<double>(py_scales);
     const shape4d_t shape{static_cast<npy_intp>(batch_size), 1, TAG_SIZE, TAG_SIZE};
-    std::array<npy_intp, 2> labels_shape{static_cast<npy_intp>(batch_size), Grid::NUM_MIDDLE_CELLS};
+    std::array<npy_intp, 2> labels_shape{static_cast<npy_intp>(batch_size), NUM_MIDDLE_CELLS};
     static const size_t n_params = 6;
     std::array<npy_intp, 2> grid_params_shape{static_cast<npy_intp>(batch_size), n_params};
     float *raw_labels = static_cast<float*>(malloc(get_count(labels_shape)*sizeof(float)));
@@ -208,7 +209,7 @@ void buildGridsFromNpArrWorkFn(
     for(size_t i = offset; i < offset + nb_todo; i++) {
         Grid::idarray_t id;
         int pos = 0;
-        for(size_t c = 0; c < Grid::NUM_MIDDLE_CELLS; c++) {
+        for(size_t c = 0; c < NUM_MIDDLE_CELLS; c++) {
             float cell = *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos));
             ++pos;
             if(cell == 1.) {
@@ -273,10 +274,10 @@ py::list drawGrids(
         valueError(ss.str());
         return py::list();
     }
-    if (shape[1] != Grid::NUM_MIDDLE_CELLS + NUM_GRID_CONFIGS) {
+    if (shape[1] != NUM_MIDDLE_CELLS + NUM_GRID_CONFIGS) {
         std::stringstream ss;
         ss << "bits_and_configs has wrong shape in the last dimension: " << shape[1] << " . Expected "
-                << Grid::NUM_MIDDLE_CELLS + NUM_GRID_CONFIGS;
+                << NUM_MIDDLE_CELLS + NUM_GRID_CONFIGS;
         valueError(ss.str());
         return py::list();
     }
@@ -357,7 +358,7 @@ private:
     }
 
     PyObject * gridToBitsPyArray(const std::vector<GroundTruthDatum> & grids, size_t batch_size) {
-        std::array<npy_intp, 2> shape{static_cast<npy_intp>(batch_size), Grid::NUM_MIDDLE_CELLS};
+        std::array<npy_intp, 2> shape{static_cast<npy_intp>(batch_size), NUM_MIDDLE_CELLS};
         const size_t count = get_count<2>(shape);
         float *raw_data = static_cast<float*>(malloc(count * sizeof(float)));
         float *bits_ptr = raw_data;
@@ -416,7 +417,7 @@ BOOST_PYTHON_MODULE(pybeesgrid)
     ENUM_ATTR(INNER_WHITE_SEMICIRCLE);
 
     ATTR(TAG_SIZE);
-    py::scope().attr("NUM_MIDDLE_CELLS") = Grid::NUM_MIDDLE_CELLS;
+    py::scope().attr("NUM_MIDDLE_CELLS") = NUM_MIDDLE_CELLS;
     py::scope().attr("NUM_CONFIGS") = NUM_GRID_CONFIGS;
 
     py::class_<GridGenerator>("GridGenerator")
