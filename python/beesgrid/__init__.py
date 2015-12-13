@@ -32,4 +32,20 @@ def draw_grids(bits: np.ndarray, configs: np.ndarray, scales=[1.], artist=None):
         artist = BlackWhiteArtist()
 
     bits_and_config = np.concatenate((bits, configs), axis=1)
-    return drawGrids(bits_and_config, artist, scales)
+    return drawGrids(bits_and_config, artist, scales)def generate_grids(batch_size=64, generator=None, with_gird_params=False,
+                   artist=None, scales=[1.]):
+    """
+    Returns a tuple with `(b_1, b_2, .., b_m, label, grid_params)`,
+    where `b_i` is the batch with scale `scales[i]`.
+    """
+    if generator is None:
+        generator = GridGenerator()
+    if artist is None:
+        artist = BadGridArtist()
+    while True:
+        batch = pybg.generateBatch(generator, artist, batch_size, scales)
+        if with_gird_params:
+            yield batch
+        else:
+            yield batch[:len(scales)+1]
+

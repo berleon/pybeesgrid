@@ -55,21 +55,34 @@ def test_benchmark():
     print("need {:.5f}s for {} grids".format(t.timeit(n) / n, bs))
 
 
-def test_draw_grids():
+def test_draw_grids_checks_shape():
     bs = 64
-    bits = np.random.binomial(1, 0.5, (bs, NUM_CELLS)).astype(np.float32)
-    configs = np.zeros((bs, NUM_CONFIG), dtype=np.float32)
+    too_many_dims = NUM_CONFIGS + 10
+    bits = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS)).astype(np.float32)
+    configs = np.zeros((bs, too_many_dims), dtype=np.float32)
+    with pytest.raises(ValueError):
+        draw_grids(bits, configs)
+
+
+def test_draw_grids_checks_dims():
+    bs = 64
+    too_many_dims = bs
+    bits = np.random.binomial(1, 0.5, (bs, too_many_dims, NUM_MIDDLE_CELLS)).astype(np.float32)
+    configs = np.zeros((bs, too_many_dims, NUM_CONFIGS), dtype=np.float32)
+    with pytest.raises(ValueError):
+        draw_grids(bits, configs)
+
+
+def test_draw_grids():
+    bs = 256
+    bits = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS)).astype(np.float32)
+    configs = np.zeros((bs, NUM_CONFIGS), dtype=np.float32)
     configs[:, CONFIG_LABELS.index('center_x')] = TAG_SIZE // 2
     configs[:, CONFIG_LABELS.index('center_y')] = TAG_SIZE // 2
-    configs[:, CONFIG_LABELS.index('radius')] = 25
+    configs[:, CONFIG_LABELS.index('radius')] = np.linspace(0, 32, num=bs)
     grids, = draw_grids(bits, configs)
-    print(grids.max())
-    print(grids[0, 0, 0, 0])
     output_dir = "testout"
     os.makedirs(output_dir, exist_ok=True)
-
-    print("grid shape: {}".format(grids.shape))
-    print("grid len: {}".format(len(grids)))
     for i in range(len(grids)):
-        scipy.misc.imsave(output_dir + '/grid_{}.png'.format(i), grids[i, 0])
+        scipy.misc.imsave(output_dir + '/grid_{:03d}.png'.format(i), grids[i, 0])
 

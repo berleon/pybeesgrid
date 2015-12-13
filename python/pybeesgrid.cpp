@@ -42,7 +42,7 @@ PyObject * newPyArrayOwnedByNumpy(shape_t<N> shape, int type, void * data) {
 }
 
 template<typename N>
-std::vector<N> pylistToVec(py::list pylist) {
+std::vector<N> vectorFromPyList(py::list pylist) {
     std::vector<N> vec;
     for (int i = 0; i < py::len(pylist); ++i)
     {
@@ -106,7 +106,7 @@ PyObject * drawGridsParallel(
     }
     const size_t pixels_per_tag = scaled_shape[2]*scaled_shape[3];
 
-    uchar *raw_data = static_cast<uchar*>(malloc(get_count(scaled_shape) * sizeof(uchar)));
+    uchar *raw_data = static_cast<uchar*>(calloc(get_count(scaled_shape), sizeof(uchar)));
     std::vector<std::thread> threads;
     size_t start = 0;
     for (size_t i = 0; i < grids_vecs.size(); i++) {
@@ -161,8 +161,8 @@ void generateGridsParallel(
     }
 }
 
-py::tuple generateBatch(GridGenerator & gen, const GridArtist & artist, const size_t batch_size, py::list py_scales) {
-    auto scales = pylistToVec<double>(py_scales);
+py::list generateBatch(GridGenerator & gen, const GridArtist & artist, const size_t batch_size, py::list py_scales) {
+    auto scales = vectorFromPyList<double>(py_scales);
     const shape4d_t shape{static_cast<npy_intp>(batch_size), 1, TAG_SIZE, TAG_SIZE};
     std::array<npy_intp, 2> labels_shape{static_cast<npy_intp>(batch_size), Grid::NUM_MIDDLE_CELLS};
     static const size_t n_params = 6;
@@ -191,7 +191,7 @@ py::tuple generateBatch(GridGenerator & gen, const GridArtist & artist, const si
     }
     return_py_objs.append(py::handle<>(newPyArrayOwnedByNumpy(labels_shape, NPY_FLOAT, raw_labels)));
     return_py_objs.append(py::handle<>(newPyArrayOwnedByNumpy(grid_params_shape, NPY_DOUBLE, raw_grid_params)));
-    return py::tuple(return_py_objs);
+    return return_py_objs;
 }
 
 void valueError(const std::string & msg) {
@@ -268,11 +268,11 @@ void buildGridsFromNpArr(PyArrayObject * bits_and_config_ptr,
     }
 }
 
-py::tuple drawGrids(
-        py::numeric::array bits_and_configs,
+py::list drawGrids(
+        PyObject * bits_and_configs,
         const GridArtist & artist,
         py::list py_scales) {
-    PyArrayObject* arr_ptr = reinterpret_cast<PyArrayObject*>(bits_and_configs.ptr());
+    PyArrayObject* arr_ptr = reinterpret_cast<PyArrayObject*>(bits_and_configs);
 
     int ndims = PyArray_NDIM(arr_ptr);
     npy_intp * shape =  PyArray_SHAPE(arr_ptr);
@@ -280,38 +280,33 @@ py::tuple drawGrids(
         std::stringstream ss;
         ss << "bits_and_configs has wrong number of dimensions, expected 2 found: " << ndims;
         valueError(ss.str());
+        return py::list();
     }
     if (shape[1] != Grid::NUM_MIDDLE_CELLS + NUM_GRID_CONFIGS) {
         std::stringstream ss;
         ss << "bits_and_configs has wrong shape in the last dimension: " << shape[1] << " . Expected "
                 << Grid::NUM_MIDDLE_CELLS + NUM_GRID_CONFIGS;
         valueError(ss.str());
-
+        return py::list();
     }
     const size_t batch_size = static_cast<size_t>(shape[0]);
-    std::cout << "bits_and_conig shape: (" << shape[0] << ", " << shape[1] << ", )" << std::endl;
-
-    auto scales = pylistToVec<double>(py_scales);
-
+    auto scales = vectorFromPyList<double>(py_scales);
     const shape4d_t out_shape{static_cast<npy_intp>(batch_size), 1, TAG_SIZE, TAG_SIZE};
-    static const size_t n_params = 6;
-
     std::vector<std::vector<GeneratedGrid>> grids_vecs;
     buildGridsFromNpArr(arr_ptr, batch_size, grids_vecs);
-
-    py::list return_py_objs;
+    py::list grids;
     for(auto & scale : scales) {
-        return_py_objs.append(py::handle<>(
-                drawGridsParallel(artist, grids_vecs, out_shape, scale)));
+        py::handle<> scaled_grids(drawGridsParallel(artist, grids_vecs, out_shape, scale));
+        grids.append(scaled_grids);
     }
-    return py::tuple(return_py_objs);
+    return grids;
 }
 
 
 class PyGTDataLoader {
 public:
     PyGTDataLoader(py::list pyfiles) :
-            _gt_loader(pylistToVec<std::string>(pyfiles)) { };
+            _gt_loader(vectorFromPyList<std::string>(pyfiles)) { };
 
     py::object batch(size_t batch_size, bool repeat) {
         GTRepeat repeat_enum;
@@ -400,8 +395,8 @@ void * init_numpy() {
 BOOST_PYTHON_MODULE(pybeesgrid)
 {
     init_numpy();
-    py::def("generateBatch", generateBatch);
-    py::def("drawGrids", drawGrids);
+    py::def("generateBatch", &generateBatch);
+    py::def("drawGrids", &drawGrids);
 
     ENUM_ATTR(INNER_BLACK_SEMICIRCLE);
     ENUM_ATTR(CELL_0_BLACK);
@@ -434,6 +429,8 @@ BOOST_PYTHON_MODULE(pybeesgrid)
     ENUM_ATTR(INNER_WHITE_SEMICIRCLE);
 
     ATTR(TAG_SIZE);
+    py::scope().attr("NUM_MIDDLE_CELLS") = Grid::NUM_MIDDLE_CELLS;
+    py::scope().attr("NUM_CONFIGS") = NUM_GRID_CONFIGS;
 
     py::class_<GridGenerator>("GridGenerator")
             .def("setYawAngle", &GridGenerator::setYawAngle)
