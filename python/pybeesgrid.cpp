@@ -221,9 +221,9 @@ void buildGridsFromNpArrWorkFn(
             }
         }
 
-        double rot_x =  *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
-        double rot_y =  *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
         double rot_z =  *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
+        double rot_y =  *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
+        double rot_x =  *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
         float x =       *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
         float y =       *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
         double radius = *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
