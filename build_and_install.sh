@@ -15,4 +15,4 @@ cd build
 cmake ..
 make -j $NPROC create_python_pkg
 cd python/package
-pip install .
+pip install -U --no-deps .
