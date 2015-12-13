@@ -84,11 +84,11 @@ CELLS_WHITE = MASK_KEYS[
 MASK_WHITE = CELLS_WHITE + ["OUTER_WHITE_RING", "INNER_WHITE_SEMICIRCLE"]
 
 
-def draw_grids(bits: np.ndarray, configs: np.ndarray, scales=[1.], artist=None):
+def draw_grids(ids: np.ndarray, configs: np.ndarray, scales=[1.], artist=None):
     if artist is None:
         artist = BlackWhiteArtist()
 
-    bits_and_config = np.concatenate((bits, configs), axis=1)
+    bits_and_config = np.concatenate((ids, configs), axis=1)
     grids = drawGrids(np.ascontiguousarray(bits_and_config), artist, scales)
     return grids
 
