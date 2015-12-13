@@ -44,7 +44,6 @@ public:
         if (copy_size == 0) {
             return boost::optional<gt_dataset_t>();
         }
-        std::cout << "copy size: " << copy_size << std::endl;
         imgs.reserve(copy_size);
         for(auto img_iter = img_begin; img_iter != img_begin + copy_size; img_iter++) {
             imgs.push_back(*img_iter);
@@ -91,7 +90,6 @@ protected:
             image = loadGTImage(image_path);
             _frame_index++;
         } while(grids.size() == 0);
-        std::cout << "with " << grids.size() << " grids" << std::endl;
         return boost::make_optional<grid_mat_pair_t>(
                 std::make_pair<gt_grid_vec_t , cv::Mat>(std::move(grids), std::move(image)));
     }
@@ -111,7 +109,6 @@ protected:
         return  data;
     }
     cv::Mat loadGTImage(const std::string &gt_path) {
-        std::cout << "loading image: " << gt_path << std::endl;
         return cv::imread(gt_path, CV_LOAD_IMAGE_GRAYSCALE);
     }
     size_t cacheSize() {

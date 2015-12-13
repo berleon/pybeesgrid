@@ -51,7 +51,7 @@ def test_gt_loader_bs():
             assert not last_iteration_occured
             last_iteration_occured = True
             bs = grids.shape[0]
-            
+
         assert grids.shape == (bs, 1, TAG_SIZE, TAG_SIZE)
         assert bits.shape == (bs, NUM_MIDDLE_CELLS)
         assert config.shape == (bs, NUM_CONFIGS)

@@ -227,15 +227,6 @@ void buildGridsFromNpArrWorkFn(
         float y =       *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
         double radius = *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
         cv::Point2i center{static_cast<int>(x), static_cast<int>(y)};
-        std::cout << "[" <<  i << "]" <<
-                "rot_x"  << rot_x <<
-                "rot_y"  << rot_y  <<
-                "rot_z"  << rot_z  <<
-                "x"      << x      <<
-                "y"      << y      <<
-                "radius" << radius <<
-                "center" << center << std::endl;
-
         grids.emplace_back(id, center, radius, rot_x, rot_y, rot_z);
     }
 }
@@ -319,7 +310,6 @@ public:
         if(opt_batch) {
             auto & batch = opt_batch.get();
             batch_size = batch.first.size();
-            std::cout << "imgs: " << batch.first.size() << ", grids: " << batch.second.size() << std::endl;
             auto pyarr_images = imagesToPyArray(batch.first, batch_size);
             auto pyarr_bits = gridToBitsPyArray(batch.second, batch_size);
             auto pyarr_config = gridToConfigPyArray(batch.second, batch_size);
@@ -353,7 +343,6 @@ private:
         const static size_t nb_configs = 6;
         std::array<npy_intp, 2> shape{static_cast<npy_intp>(batch_size), nb_configs};
         size_t count = get_count<2>(shape);
-        std::cout << "[config] count: " << count * sizeof(float) << ", shp[0]: " << shape[0] << ", shp[1]: " << shape[1] << ", grids.size(): " << grids.size() << std::endl;
         float *raw_data = static_cast<float*>(malloc(count * sizeof(float)));
         float *ptr = raw_data;
         for(const auto & grid : grids) {
@@ -364,15 +353,12 @@ private:
             *ptr = grid.y; ++ptr;
             *ptr = grid.radius; ++ptr;
         }
-        std::cout << "pointer diff: " << ptr - raw_data << std::endl;
         return newPyArrayOwnedByNumpy(shape, NPY_FLOAT32, raw_data);
     }
 
     PyObject * gridToBitsPyArray(const std::vector<GroundTruthDatum> & grids, size_t batch_size) {
         std::array<npy_intp, 2> shape{static_cast<npy_intp>(batch_size), Grid::NUM_MIDDLE_CELLS};
         const size_t count = get_count<2>(shape);
-        std::cout << "[bits] count: " << count * sizeof(float) << ", shp[0]: " << shape[0] << ", shp[1]: " << shape[1] << ", grids.size(): " << grids.size() << std::endl;
-
         float *raw_data = static_cast<float*>(malloc(count * sizeof(float)));
         float *bits_ptr = raw_data;
         for(const auto & grid : grids) {
