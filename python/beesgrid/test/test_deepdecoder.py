@@ -13,11 +13,14 @@
 # limitations under the License.
 import os
 
+import pytest
 import scipy.misc
+import time
 
-from .. import TAG_SIZE, NUM_CELLS, NUM_CONFIG, CONFIG_LABELS, draw_grids
-from ..generate_grids import batches as gen_grid_batches
-from ..gt_grids import batches as gt_batches
+import sys
+
+from .. import TAG_SIZE, NUM_CONFIGS, CONFIG_LABELS, draw_grids, \
+        generate_grids, gt_grids, NUM_MIDDLE_CELLS
 
 from timeit import Timer
 import numpy as np
@@ -25,33 +28,33 @@ import numpy as np
 
 def test_generate_grids():
     bs = 64
-    grids, labels = next(gen_grid_batches(bs))
+    grids, labels = next(generate_grids(bs))
     assert grids.shape == (bs, 1, TAG_SIZE, TAG_SIZE)
-    assert labels.shape == (bs, NUM_CELLS)
+    assert labels.shape == (bs, NUM_MIDDLE_CELLS)
 
 
 def test_generate_grids_scaled():
     bs = 64
-    grids_1, grids_05, grids_025, labels = next(gen_grid_batches(bs, scales=[1, 0.5, 0.25]))
+    grids_1, grids_05, grids_025, labels = next(generate_grids(bs, scales=[1, 0.5, 0.25]))
     assert grids_1.shape == (bs, 1, TAG_SIZE, TAG_SIZE)
     assert grids_05.shape == (bs, 1, TAG_SIZE//2, TAG_SIZE//2)
     assert grids_025.shape == (bs, 1, TAG_SIZE//4, TAG_SIZE//4)
-    assert labels.shape == (bs, NUM_CELLS)
+    assert labels.shape == (bs, NUM_MIDDLE_CELLS)
 
 
 def test_gt_loader():
     bs = 64
     gt_files = ["../../src/test/testdata/Cam_0_20140804152006_3.tdat"] * 3
-    for grids, bits, config in gt_batches(gt_files, batch_size=bs):
+    for grids, bits, config in gt_grids(gt_files, batch_size=bs):
         assert grids.shape == (bs, 1, TAG_SIZE, TAG_SIZE)
-        assert bits.shape == (bs, NUM_CELLS)
-        assert config.shape == (bs, NUM_CONFIG)
+        assert bits.shape == (bs, NUM_MIDDLE_CELLS)
+        assert config.shape == (bs, NUM_CONFIGS)
 
 
 def test_benchmark():
     bs = 6400
     n = 10
-    t = Timer(lambda: next(gen_grid_batches(bs)))
+    t = Timer(lambda: next(generate_grids(bs)))
     print("need {:.5f}s for {} grids".format(t.timeit(n) / n, bs))
 
 
