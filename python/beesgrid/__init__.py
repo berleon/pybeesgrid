@@ -93,13 +93,17 @@ def draw_grids(bits: np.ndarray, configs: np.ndarray, scales=[1.], artist=None):
     return grids
 
 
-def gt_grids(gt_files, batch_size=64, repeat=False):
+def gt_grids(gt_files, batch_size=64, repeat=False, all=False):
     """
     Returns a `(images, id, config)` tuple, where `images` are the images of
     the bees, `id` is a (batch_size, 12) matrix of the bees' ids and config is
     a (batch_size, 6) matrix with the 'z_rotation', 'y_rotation', 'x_rotation',
     'center_x', 'center_y' and 'radius' in this order.
+
+    If `all` is True, then all ground truth tags are returned.
     """
+    if all:
+        batch_size = np.iinfo(np.int64).max
     gt_loader = pybg.GTDataLoader(gt_files)
     while True:
         batch = gt_loader.batch(batch_size, repeat)

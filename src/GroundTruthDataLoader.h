@@ -31,24 +31,29 @@ public:
         gt_dataset_t dataset;
         auto & imgs = dataset.first;
         auto & grids = dataset.second;
-        imgs.reserve(batch_size);
-        grids.reserve(batch_size);
         while(cache_left() < batch_size) {
             if (! fillCache(repeat)) {
                 break;
             }
         }
-        if(_cache_idx + batch_size >= cacheSize()) {
+        std::vector<cv::Mat>::const_iterator img_begin = _img_cache.cbegin() + _cache_idx;
+        const auto & gt_grids_begin = _gt_grids_cache.cbegin() + _cache_idx;
+
+        const size_t copy_size = std::min(batch_size,
+                                    static_cast<size_t>(std::distance(img_begin, _img_cache.cend())));
+        if (copy_size == 0) {
             return boost::optional<gt_dataset_t>();
         }
-        const auto & img_begin = _img_cache.begin() + _cache_idx;
-        const auto & gt_grids_begin = _gt_grids_cache.cbegin() + _cache_idx;
-        imgs.insert(imgs.end(), img_begin, img_begin + batch_size);
-        // TODO: Use new grid
-        for(auto gt_grids_iter = gt_grids_begin; gt_grids_iter != gt_grids_begin + batch_size; gt_grids_iter++) {
+        std::cout << "copy size: " << copy_size << std::endl;
+        imgs.reserve(copy_size);
+        for(auto img_iter = img_begin; img_iter != img_begin + copy_size; img_iter++) {
+            imgs.push_back(*img_iter);
+        }
+
+        for(auto gt_grids_iter = gt_grids_begin; gt_grids_iter != gt_grids_begin + copy_size; gt_grids_iter++) {
             grids.emplace_back(GroundTruthDatum::fromGrid3D(*gt_grids_iter));
         }
-        _cache_idx += batch_size;
+        _cache_idx += copy_size;
         maybeCleanCache();
         return dataset;
     }

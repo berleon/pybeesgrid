@@ -318,6 +318,7 @@ public:
         auto opt_batch = _gt_loader.batch(batch_size, repeat_enum);
         if(opt_batch) {
             auto & batch = opt_batch.get();
+            batch_size = batch.first.size();
             std::cout << "imgs: " << batch.first.size() << ", grids: " << batch.second.size() << std::endl;
             auto pyarr_images = imagesToPyArray(batch.first, batch_size);
             auto pyarr_bits = gridToBitsPyArray(batch.second, batch_size);

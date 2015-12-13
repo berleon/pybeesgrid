@@ -41,6 +41,9 @@ std::vector<std::shared_ptr<PipelineGrid>> getPipelineGridsForFrame(
 	const auto &grid3ds = getGrid3DsForFrame(gt_data, frameNumber);
 	std::vector <std::shared_ptr<PipelineGrid>> pipelineGrids;
 	for (const auto &grid3d: grid3ds) {
+		if(!grid3d->isSettable() or !grid3d->hasBeenBitToggled()) {
+			continue;
+		}
 		auto grid = convertGrid3dToPipelineGrid(grid3d);
 		if (grid) {
 			pipelineGrids.emplace_back(std::move(grid));

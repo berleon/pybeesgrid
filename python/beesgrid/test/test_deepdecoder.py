@@ -42,13 +42,25 @@ def test_generate_grids_scaled():
     assert labels.shape == (bs, NUM_MIDDLE_CELLS)
 
 
-def test_gt_loader():
+def test_gt_loader_bs():
     bs = 64
     gt_files = ["../../src/test/testdata/Cam_0_20140804152006_3.tdat"] * 3
+    last_iteration_occured = False
     for grids, bits, config in gt_grids(gt_files, batch_size=bs):
+        if grids.shape[0] < bs:
+            assert not last_iteration_occured
+            last_iteration_occured = True
+            bs = grids.shape[0]
+            
         assert grids.shape == (bs, 1, TAG_SIZE, TAG_SIZE)
         assert bits.shape == (bs, NUM_MIDDLE_CELLS)
         assert config.shape == (bs, NUM_CONFIGS)
+
+
+def test_gt_loader_all():
+    gt_files = ["../../src/test/testdata/Cam_0_20140804152006_3.tdat"] * 3
+    for grids, bits, config in gt_grids(gt_files, all=True):
+        assert grids.shape[0] >= 300
 
 
 def test_benchmark():
