@@ -106,9 +106,9 @@ def draw_grids(ids: np.ndarray, configs: np.ndarray, scales=[1.], artist=None):
 
 def _normalize_angle(x):
     x %= 2*np.pi
-    x = (x + 2*np.pi) % 360
+    x = (x + 2*np.pi) % (2*np.pi)
     x[x > np.pi] -= 2*np.pi
-    assert ((-np.pi < x) & (x <= np.pi)).all()
+    assert ((-np.pi <= x) & (x <= np.pi)).all()
     return x
 
 

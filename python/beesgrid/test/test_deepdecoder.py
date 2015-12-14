@@ -57,9 +57,9 @@ def test_gt_loader_bs():
         assert config.shape == (bs, NUM_CONFIGS)
 
         z, y, x = CONFIG_ROTS
-        assert ((-np.pi < config[:, z]) & (config[:, z] <= np.pi)).all()
-        assert ((-np.pi < config[:, y]) & (config[:, y] <= np.pi)).all()
-        assert ((-np.pi < config[:, x]) & (config[:, x] <= np.pi)).all()
+        assert ((-np.pi <= config[:, z]) & (config[:, z] <= np.pi)).all()
+        assert ((-np.pi <= config[:, y]) & (config[:, y] <= np.pi)).all()
+        assert ((-np.pi <= config[:, x]) & (config[:, x] <= np.pi)).all()
 
 
 def test_gt_loader_all():
