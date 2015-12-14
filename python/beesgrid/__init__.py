@@ -37,10 +37,21 @@ __all__ = ["TAG_SIZE", "NUM_MIDDLE_CELLS", "CONFIG_LABELS", "NUM_CONFIGS",
             "CELLS_BLACK", "CELLS_WHITE"]
 
 
-
 CONFIG_LABELS = ('z_rotation', 'y_rotation', 'x_rotation',
                  'center_x', 'center_y', 'radius')
 
+CONFIG_ROTS = (
+    CONFIG_LABELS.index('z_rotation'),
+    CONFIG_LABELS.index('y_rotation'),
+    CONFIG_LABELS.index('x_rotation'),
+)
+
+CONFIG_CENTER = (
+    CONFIG_LABELS.index('center_x'),
+    CONFIG_LABELS.index('center_y'),
+)
+
+CONFIG_RADIUS = CONFIG_LABELS.index('radius')
 
 MASK = collections.OrderedDict([
     ("INNER_BLACK_SEMICIRCLE", INNER_BLACK_SEMICIRCLE),
