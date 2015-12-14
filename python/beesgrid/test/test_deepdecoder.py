@@ -64,8 +64,11 @@ def test_gt_loader_bs():
 
 def test_gt_loader_all():
     gt_files = ["../../src/test/testdata/Cam_0_20140804152006_3.tdat"] * 3
+    only_once = 0
     for grids, bits, config in gt_grids(gt_files, all=True):
         assert grids.shape[0] >= 300
+        only_once += 1
+    assert only_once == 1
 
 
 def test_benchmark():
