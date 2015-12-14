@@ -20,7 +20,7 @@ import time
 import sys
 
 from .. import TAG_SIZE, NUM_CONFIGS, CONFIG_LABELS, draw_grids, \
-        generate_grids, gt_grids, NUM_MIDDLE_CELLS
+        generate_grids, gt_grids, NUM_MIDDLE_CELLS, CONFIG_ROTS
 
 from timeit import Timer
 import numpy as np
@@ -55,6 +55,11 @@ def test_gt_loader_bs():
         assert grids.shape == (bs, 1, TAG_SIZE, TAG_SIZE)
         assert bits.shape == (bs, NUM_MIDDLE_CELLS)
         assert config.shape == (bs, NUM_CONFIGS)
+
+        z, y, x = CONFIG_ROTS
+        assert ((-np.pi < config[:, z]) & (config[:, z] <= np.pi)).all()
+        assert ((-np.pi < config[:, y]) & (config[:, y] <= np.pi)).all()
+        assert ((-np.pi < config[:, x]) & (config[:, x] <= np.pi)).all()
 
 
 def test_gt_loader_all():

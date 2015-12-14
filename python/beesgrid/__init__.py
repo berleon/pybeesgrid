@@ -104,6 +104,14 @@ def draw_grids(ids: np.ndarray, configs: np.ndarray, scales=[1.], artist=None):
     return grids
 
 
+def _normalize_angle(x):
+    x %= 2*np.pi
+    x = (x + 2*np.pi) % 360
+    x[x > np.pi] -= 2*np.pi
+    assert ((-np.pi < x) & (x <= np.pi)).all()
+    return x
+
+
 def gt_grids(gt_files, batch_size=64, repeat=False, all=False):
     """
     Returns a `(images, id, config)` tuple, where `images` are the images of
@@ -121,7 +129,10 @@ def gt_grids(gt_files, batch_size=64, repeat=False, all=False):
         if batch is None:
             break
         else:
-            yield batch
+            gt, ids, configs = batch
+            z, _, x = CONFIG_ROTS
+            configs[:, z:x+1] = _normalize_angle(configs[:, z:x+1])
+            yield gt, ids, configs
 
 
 def generate_grids(batch_size=64, generator=None, with_gird_params=False,
