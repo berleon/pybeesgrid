@@ -130,6 +130,7 @@ def gt_grids(gt_files, batch_size=64, repeat=False, all=False):
             break
         else:
             gt, ids, configs = batch
+            gt = gt.astype(np.float32) / 255.
             z, _, x = CONFIG_ROTS
             configs[:, z:x+1] = _normalize_angle(configs[:, z:x+1])
             yield gt, ids, configs
