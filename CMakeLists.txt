@@ -58,13 +58,11 @@ find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(Threads REQUIRED)
 find_package(Boost COMPONENTS system filesystem serialization python3 program_options REQUIRED)
-find_package(LMDB REQUIRED)
 find_package(gflags REQUIRED)
 
 include_directories(
     SYSTEM ${CATCH_INCLUDE_DIR}
     SYSTEM ${OpenCV_INCLUDE_DIRS}
-    SYSTEM ${LMDB_INCLUDE_DIRS}
 )
 
 set(libs
@@ -72,7 +70,6 @@ set(libs
     ${Boost_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
     ${PYTHON_LIBRARIES}
-    ${LMDB_LIBRARIES}
     ${CPM_LIBRARIES}
 )
 
