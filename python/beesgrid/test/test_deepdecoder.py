@@ -77,6 +77,16 @@ def test_benchmark():
     t = Timer(lambda: next(generate_grids(bs)))
     print("need {:.5f}s for {} grids".format(t.timeit(n) / n, bs))
 
+def test_draw_benchmark():
+    bs = 64
+    n = 1000
+    bits = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS)).astype(np.float32)
+    configs = np.zeros((bs, NUM_CONFIGS), dtype=np.float32)
+    configs[:, CONFIG_LABELS.index('center_x')] = TAG_SIZE // 2
+    configs[:, CONFIG_LABELS.index('center_y')] = TAG_SIZE // 2
+    configs[:, CONFIG_LABELS.index('radius')] = np.linspace(0, 32, num=bs)
+    t = Timer(lambda: draw_grids(bits, configs))
+    print("need {:.5f}s for {} grids".format(t.timeit(n) / n, bs))
 
 def test_draw_grids_checks_shape():
     bs = 64
