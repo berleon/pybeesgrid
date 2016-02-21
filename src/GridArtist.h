@@ -9,7 +9,7 @@ class GridArtist {
 public:
     void inline draw(const GeneratedGrid &grid, cv::Mat &img) {
         cv::Point2i image_center(img.rows / 2, img.cols / 2);
-        this->_draw(grid, img, image_center);
+        this->draw(grid, img, image_center);
     }
 
     inline void draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2i offset) {

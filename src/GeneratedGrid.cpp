@@ -7,7 +7,6 @@ GeneratedGrid::GeneratedGrid(Grid::idarray_t id, cv::Point2i center, double radi
         Grid(center, radius, angle_z, angle_y, angle_x)
 {
     _ID = id;
-    prepare_visualization_data();
 }
 
 

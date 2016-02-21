@@ -106,12 +106,12 @@ def test_draw_grids_checks_dims():
         draw_grids(bits, configs)
 
 
-def test_draw_grids():
+def test_draw_grids_paint():
     bs = 256
     bits = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS)).astype(np.float32)
     configs = np.zeros((bs, NUM_CONFIGS), dtype=np.float32)
-    configs[:, CONFIG_LABELS.index('center_x')] = TAG_SIZE // 2
-    configs[:, CONFIG_LABELS.index('center_y')] = TAG_SIZE // 2
+    configs[:, CONFIG_LABELS.index('center_x')] = 0
+    configs[:, CONFIG_LABELS.index('center_y')] = 0
     configs[:, CONFIG_LABELS.index('radius')] = np.linspace(0, 32, num=bs)
     grids, = draw_grids(bits, configs)
     output_dir = "testout"
