@@ -98,26 +98,30 @@ PyObject * drawGridsParallel(
         const shape4d_t shape,
         double scale
 ) {
-    ScopedGILRelease gil_release;
-
     shape4d_t scaled_shape = shape;
-    for(size_t i = 2; i < shape.size(); i++) {
-        int dim = shape.at(i);
-        scaled_shape[i] = npy_intp(round(dim*scale));
-    }
-    const size_t pixels_per_tag = scaled_shape[2]*scaled_shape[3];
+    uchar *raw_data;
+    {
+        ScopedGILRelease gil_release;
+        raw_data = static_cast<uchar *>(calloc(get_count(scaled_shape), sizeof(uchar)));
 
-    uchar *raw_data = static_cast<uchar*>(calloc(get_count(scaled_shape), sizeof(uchar)));
-    std::vector<std::thread> threads;
-    size_t start = 0;
-    for (size_t i = 0; i < grids_vecs.size(); i++) {
-        uchar * raw_data_offset = raw_data + start*pixels_per_tag;
-        auto & grids = grids_vecs.at(i);
-        threads.push_back(std::thread(&drawGridsParallelWorkFn, artist.clone(), grids, scaled_shape, raw_data_offset, scale));
-        start += grids.size();
-    }
-    for(auto & t : threads) {
-        t.join();
+        for (size_t i = 2; i < shape.size(); i++) {
+            int dim = shape.at(i);
+            scaled_shape[i] = npy_intp(round(dim * scale));
+        }
+        const size_t pixels_per_tag = scaled_shape[2] * scaled_shape[3];
+
+        std::vector<std::thread> threads;
+        size_t start = 0;
+        for (size_t i = 0; i < grids_vecs.size(); i++) {
+            uchar *raw_data_offset = raw_data + start * pixels_per_tag;
+            auto &grids = grids_vecs.at(i);
+            threads.push_back(
+                    std::thread(&drawGridsParallelWorkFn, artist.clone(), grids, scaled_shape, raw_data_offset, scale));
+            start += grids.size();
+        }
+        for (auto &t : threads) {
+            t.join();
+        }
     }
     return newPyArrayOwnedByNumpy(scaled_shape, NPY_UBYTE, raw_data);
 }
@@ -235,10 +239,8 @@ void buildGridsFromNpArrWorkFn(
 void buildGridsFromNpArr(PyArrayObject * bits_and_config_ptr,
                          const size_t batch_size,
                          std::vector<std::vector<GeneratedGrid>> &grids_vecs) {
-    ScopedGILRelease gil_release;
     size_t nb_cpus = 2*std::thread::hardware_concurrency();
     if (nb_cpus == 0) { nb_cpus = 1; }
-    std::vector<std::thread> threads;
     const size_t part = batch_size / nb_cpus;
     for (size_t i = 0; i < nb_cpus; i++) {
         grids_vecs.push_back(std::vector<GeneratedGrid>());
@@ -252,11 +254,7 @@ void buildGridsFromNpArr(PyArrayObject * bits_and_config_ptr,
             end = start + part;
         }
         const size_t nb_todo = end - start;
-        threads.push_back(std::thread(&buildGridsFromNpArrWorkFn, bits_and_config_ptr, start,
-                                      nb_todo, std::ref(grids_vecs.at(i))));
-    }
-    for(auto & t : threads) {
-        t.join();
+        buildGridsFromNpArrWorkFn(bits_and_config_ptr, start, nb_todo, grids_vecs.at(i));
     }
 }
 
