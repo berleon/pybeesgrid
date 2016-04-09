@@ -15,12 +15,10 @@ import os
 
 import pytest
 import scipy.misc
-import time
-
-import sys
 
 from .. import TAG_SIZE, NUM_CONFIGS, CONFIG_LABELS, draw_grids, \
-        generate_grids, gt_grids, NUM_MIDDLE_CELLS, CONFIG_ROTS
+        generate_grids, gt_grids, NUM_MIDDLE_CELLS, CONFIG_ROTS, \
+        MaskGridArtist, BadGridArtist, BlackWhiteArtist
 
 from timeit import Timer
 import numpy as np
@@ -122,18 +120,22 @@ def test_draw_grids_paint():
 
 def test_draw_grids_paint_scale():
     bs = 256
-    bits = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS)).astype(np.float32)
-    configs = np.zeros((bs, NUM_CONFIGS), dtype=np.float32)
-    configs[:, CONFIG_LABELS.index('center_x')] = 0
-    configs[:, CONFIG_LABELS.index('center_y')] = 0
-    configs[:, CONFIG_LABELS.index('radius')] = np.linspace(0, 32, num=bs)
-    scales = [2, 1, 0.5]
-    grids = draw_grids(bits, configs, scales=scales)
-    output_dir = "testout"
-    os.makedirs(output_dir, exist_ok=True)
-    for scale, grid in zip(scales, grids):
-        os.makedirs(output_dir + '/grid_{}'.format(scale), exist_ok=True)
-        for i in range(len(grid)):
-            scipy.misc.imsave(
-                output_dir + '/grid_{}/grid_{:03d}.png'.format(scale, i),
-                grid[i, 0])
+    artists = [MaskGridArtist(), BlackWhiteArtist(0, 255, 0), BadGridArtist()]
+    for artist in artists:
+        bits = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS)).astype(np.float32)
+        configs = np.zeros((bs, NUM_CONFIGS), dtype=np.float32)
+        configs[:, CONFIG_LABELS.index('center_x')] = 0
+        configs[:, CONFIG_LABELS.index('center_y')] = 0
+        configs[:, CONFIG_LABELS.index('radius')] = np.linspace(0, 32, num=bs)
+        scales = [2, 1, 0.5]
+        grids = draw_grids(bits, configs, scales=scales, artist=artist)
+        output_dir = "testout"
+        os.makedirs(output_dir, exist_ok=True)
+        for scale, grid in zip(scales, grids):
+            output_dir_artist = output_dir + '/_grid_{}'.format(
+                type(artist).__name__, scale)
+            os.makedirs(output_dir_artist, exist_ok=True)
+            for i in range(len(grid)):
+                scipy.misc.imsave(
+                    output_dir_artist + '/grid_{:03d}.png'.format(i),
+                    grid[i, 0])
