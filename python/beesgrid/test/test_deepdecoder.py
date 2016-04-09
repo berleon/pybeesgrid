@@ -119,3 +119,21 @@ def test_draw_grids_paint():
     for i in range(len(grids)):
         scipy.misc.imsave(output_dir + '/grid_{:03d}.png'.format(i), grids[i, 0])
 
+
+def test_draw_grids_paint_scale():
+    bs = 256
+    bits = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS)).astype(np.float32)
+    configs = np.zeros((bs, NUM_CONFIGS), dtype=np.float32)
+    configs[:, CONFIG_LABELS.index('center_x')] = 0
+    configs[:, CONFIG_LABELS.index('center_y')] = 0
+    configs[:, CONFIG_LABELS.index('radius')] = np.linspace(0, 32, num=bs)
+    scales = [2, 1, 0.5]
+    grids = draw_grids(bits, configs, scales=scales)
+    output_dir = "testout"
+    os.makedirs(output_dir, exist_ok=True)
+    for scale, grid in zip(scales, grids):
+        os.makedirs(output_dir + '/grid_{}'.format(scale), exist_ok=True)
+        for i in range(len(grid)):
+            scipy.misc.imsave(
+                output_dir + '/grid_{}/grid_{:03d}.png'.format(scale, i),
+                grid[i, 0])

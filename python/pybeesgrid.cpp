@@ -102,12 +102,11 @@ PyObject * drawGridsParallel(
     uchar *raw_data;
     {
         ScopedGILRelease gil_release;
-        raw_data = static_cast<uchar *>(calloc(get_count(scaled_shape), sizeof(uchar)));
-
         for (size_t i = 2; i < shape.size(); i++) {
             int dim = shape.at(i);
             scaled_shape[i] = npy_intp(round(dim * scale));
         }
+        raw_data = static_cast<uchar *>(calloc(get_count(scaled_shape), sizeof(uchar)));
         const size_t pixels_per_tag = scaled_shape[2] * scaled_shape[3];
 
         std::vector<std::thread> threads;
