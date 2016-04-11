@@ -430,7 +430,8 @@ BOOST_PYTHON_MODULE(pybeesgrid)
             .def("setBlack", &BadGridArtist::setBlack)
             .def("setBackground", &BadGridArtist::setBackground);
 
-    py::class_<BlackWhiteArtist, py::bases<GridArtist>>("BlackWhiteArtist", py::init<u_int8_t, u_int8_t, u_int8_t>());
+    py::class_<BlackWhiteArtist, py::bases<GridArtist>>("BlackWhiteArtist",
+            py::init<u_int8_t, u_int8_t, u_int8_t, double>());
 
     py::class_<MaskGridArtist, py::bases<GridArtist>>("MaskGridArtist");
 

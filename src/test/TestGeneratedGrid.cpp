@@ -89,6 +89,36 @@ TEST_CASE("Grid is generated and drawn", "") {
         }
     }
 
+    SECTION("BlackWhiteArtist") {
+        u_int8_t black = 51;
+        u_int8_t white = 255;
+        u_int8_t background = 0;
+        double antialiasing = 4;
+        BlackWhiteArtist artist(black, white, background, antialiasing);
+        GridGenerator gen;
+        const GeneratedGrid grid = gen.randomGrid();
+        cv::Mat mat(size, size, CV_8UC1);
+        artist.draw(grid, mat, cv::Point2i(size/2, size/2));
+        size_t nb_blacks = 0;
+        size_t nb_whites = 0;
+        size_t nb_backgrounds = 0;
+        for(size_t x = 0; x < size; x++) {
+            for(size_t y = 0; y < size; y++) {
+                auto pixel = mat.at<u_int8_t>(x, y);
+                if (pixel == black) {
+                    nb_blacks++;
+                } else if(pixel == white) {
+                    nb_whites++;
+                } else if(pixel == background) {
+                    nb_backgrounds++;
+                }
+            }
+        }
+        cv::imwrite("blackwhite.png", mat);
+        REQUIRE(nb_blacks > 0);
+        REQUIRE(nb_whites > 0);
+        REQUIRE(nb_backgrounds > 0);
+    }
 
     SECTION("bench RandomGridDrawer") {
         GridGenerator gen;

@@ -120,7 +120,7 @@ def test_draw_grids_paint():
 
 def test_draw_grids_paint_scale():
     bs = 256
-    artists = [MaskGridArtist(), BlackWhiteArtist(0, 255, 0), BadGridArtist()]
+    artists = [MaskGridArtist(), BlackWhiteArtist(0, 255, 200, 4), BadGridArtist()]
     for artist in artists:
         bits = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS)).astype(np.float32)
         configs = np.zeros((bs, NUM_CONFIGS), dtype=np.float32)
@@ -132,7 +132,7 @@ def test_draw_grids_paint_scale():
         output_dir = "testout"
         os.makedirs(output_dir, exist_ok=True)
         for scale, grid in zip(scales, grids):
-            output_dir_artist = output_dir + '/_grid_{}'.format(
+            output_dir_artist = output_dir + '/{}_grid_{}'.format(
                 type(artist).__name__, scale)
             os.makedirs(output_dir_artist, exist_ok=True)
             for i in range(len(grid)):

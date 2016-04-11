@@ -28,17 +28,19 @@ protected:
 
 class BlackWhiteArtist : public GridArtist {
 public:
-    BlackWhiteArtist(u_int8_t black=0, u_int8_t white=255, u_int8_t background=0);
+    BlackWhiteArtist(u_int8_t black=0, u_int8_t white=255,
+                     u_int8_t background=0, double antialiasing=1);
     virtual ~BlackWhiteArtist() = default;
 
     virtual std::unique_ptr <GridArtist> clone() const {
-        return std::make_unique<BlackWhiteArtist>();
+        return std::make_unique<BlackWhiteArtist>(_white, _black, _background, _antialiasing);
     }
 
 protected:
     u_int8_t _white;
     u_int8_t _black;
     u_int8_t _background;
+    double _antialiasing;
     virtual void _draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2i center);
 };
 

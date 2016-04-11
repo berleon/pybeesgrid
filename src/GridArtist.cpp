@@ -100,30 +100,52 @@ cv::Mat GridArtist::draw(const GeneratedGrid &grid)
     return mat;
 }
 
-BlackWhiteArtist::BlackWhiteArtist(u_int8_t black, u_int8_t white, u_int8_t background) :
+BlackWhiteArtist::BlackWhiteArtist(u_int8_t black, u_int8_t white, u_int8_t background,
+                                   double antialiasing) :
     _white(white),
     _black(black),
-    _background(background)
+    _background(background),
+    _antialiasing(antialiasing)
 {
-
 }
+
 void BlackWhiteArtist::_draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2i center)
 {
-    img.setTo(_background);
-    const auto & coords2D = grid.getCoordinates2D();
-    const auto outer_white_ring = translate(coords2D.at(Grid::INDEX_OUTER_WHITE_RING), center);
-    const auto inner_white_semicircle = translate(coords2D.at(Grid::INDEX_INNER_WHITE_SEMICIRCLE), center);
-    const auto inner_black_semicircle = translate(coords2D.at(Grid::INDEX_INNER_BLACK_SEMICIRCLE), center);
-    cv::fillConvexPoly(img, outer_white_ring, _white);
+    cv::Mat draw_mat = img;
+    GeneratedGrid draw_grid = grid;
+    cv::Point2i draw_center = center;
+    if (_antialiasing != 1) {
+        cv::Size anti_size(int(img.size().width * _antialiasing),
+                           int(img.size().height * _antialiasing));
+        draw_mat = cv::Mat(anti_size, CV_8U);
+        draw_grid = grid.scale(_antialiasing);
+        draw_center = cv::Point2i(int(center.x*_antialiasing),
+                                  int(center.y*_antialiasing));
+    }
+    draw_mat.setTo(_background);
+    const auto & coords2D = draw_grid.getCoordinates2D();
+    const auto outer_white_ring = translate(coords2D.at(Grid::INDEX_OUTER_WHITE_RING), draw_center);
+    const auto inner_white_semicircle = translate(coords2D.at(Grid::INDEX_INNER_WHITE_SEMICIRCLE), draw_center);
+    const auto inner_black_semicircle = translate(coords2D.at(Grid::INDEX_INNER_BLACK_SEMICIRCLE), draw_center);
+    cv::fillConvexPoly(draw_mat, outer_white_ring, _white);
     for (size_t i = Grid::INDEX_MIDDLE_CELLS_BEGIN; i < Grid::INDEX_MIDDLE_CELLS_BEGIN + Grid::NUM_MIDDLE_CELLS; ++i)
     {
-        const auto cell = translate(coords2D.at(i), center);
-        boost::tribool bit = grid.getIdArray()[i - Grid::INDEX_MIDDLE_CELLS_BEGIN];
+        const auto cell = translate(coords2D.at(i), draw_center);
+        boost::tribool bit = draw_grid.getIdArray()[i - Grid::INDEX_MIDDLE_CELLS_BEGIN];
         cv::Scalar color = bit ? _white : _black;
-        cv::fillConvexPoly(img, cell, color);
+        cv::fillConvexPoly(draw_mat, cell, color);
     }
-    cv::fillConvexPoly(img, inner_white_semicircle, _white);
-    cv::fillConvexPoly(img, inner_black_semicircle, _black);
+    cv::fillConvexPoly(draw_mat, inner_white_semicircle, _white);
+    cv::fillConvexPoly(draw_mat, inner_black_semicircle, _black);
+
+    if (_antialiasing > 1) {
+        double sigma = 2*_antialiasing/6;
+        int ksize = int(2 * ceil(3 * sigma) + 1);
+        cv::Mat blured = draw_mat.clone();
+        cv::GaussianBlur(draw_mat, blured, cv::Size(ksize, ksize), sigma, sigma,
+                         cv::BORDER_REFLECT101);
+        cv::resize(blured, img, img.size());
+    }
 }
 
 }

@@ -30,7 +30,7 @@ int main() {
     size_t size = 64;
     GridGenerator gen;
     const size_t nb_grids = 3;
-    BlackWhiteArtist artist;
+    BlackWhiteArtist artist(0, 255, 0);
     for(size_t i = 0; i < nb_grids; i++) {
         GeneratedGrid grid = gen.randomGrid();
         {
