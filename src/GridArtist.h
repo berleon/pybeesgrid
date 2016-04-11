@@ -33,7 +33,7 @@ public:
     virtual ~BlackWhiteArtist() = default;
 
     virtual std::unique_ptr <GridArtist> clone() const {
-        return std::make_unique<BlackWhiteArtist>(_white, _black, _background, _antialiasing);
+        return std::make_unique<BlackWhiteArtist>(_black, _white, _background, _antialiasing);
     }
 
 protected:
