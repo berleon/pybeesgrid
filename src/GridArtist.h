@@ -33,7 +33,8 @@ public:
     virtual ~BlackWhiteArtist() = default;
 
     virtual std::unique_ptr <GridArtist> clone() const {
-        return std::make_unique<BlackWhiteArtist>(_black, _white, _background, _antialiasing);
+        return std::make_unique<BlackWhiteArtist>(_black,
+                                                  _white, _background, _antialiasing);
     }
 
 protected:
@@ -83,7 +84,6 @@ enum MASK {
     CELL_9_BLACK,
     CELL_10_BLACK,
     CELL_11_BLACK,
-    BACKGROUND_RING,
     IGNORE = 128,
     CELL_0_WHITE = IGNORE + 1,
     CELL_1_WHITE = IGNORE + 2,

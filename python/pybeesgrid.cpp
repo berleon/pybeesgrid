@@ -203,17 +203,28 @@ void valueError(const std::string & msg) {
         py::throw_error_already_set();
 }
 
+inline float get_float(PyArrayObject * arr, size_t i, size_t j) {
+    return *reinterpret_cast<float*>(PyArray_GETPTR2(arr, i, j));
+}
+
 void buildGridsFromNpArrWorkFn(
         PyArrayObject * bits_and_config_ptr,
+        PyObject * maybe_grid_structure,
         const size_t offset,
         const size_t nb_todo,
         std::vector<GeneratedGrid> &grids)
 {
+
+    PyArrayObject * structure_arr = nullptr;
+    if (maybe_grid_structure != Py_None) {
+        structure_arr = reinterpret_cast<PyArrayObject*>(maybe_grid_structure);
+    }
+
     for(size_t i = offset; i < offset + nb_todo; i++) {
         Grid::idarray_t id;
-        int pos = 0;
+        size_t pos = 0;
         for(size_t c = 0; c < NUM_MIDDLE_CELLS; c++) {
-            float cell = *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos));
+            float cell = get_float(bits_and_config_ptr, i, pos);
             ++pos;
             if(cell == 1.) {
                 id[c] = true;
@@ -224,41 +235,57 @@ void buildGridsFromNpArrWorkFn(
             }
         }
 
-        double rot_z =  *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
-        double rot_y =  *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
-        double rot_x =  *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
-        float x =       *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
-        float y =       *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
-        double radius = *reinterpret_cast<float*>(PyArray_GETPTR2(bits_and_config_ptr, i, pos++));
+        double rot_z =  get_float(bits_and_config_ptr, i, pos++);
+        double rot_y =  get_float(bits_and_config_ptr, i, pos++);
+        double rot_x =  get_float(bits_and_config_ptr, i, pos++);
+        float x =       get_float(bits_and_config_ptr, i, pos++);
+        float y =       get_float(bits_and_config_ptr, i, pos++);
+        double radius = get_float(bits_and_config_ptr, i, pos++);
         cv::Point2i center{static_cast<int>(x), static_cast<int>(y)};
-        grids.emplace_back(id, center, radius, rot_x, rot_y, rot_z);
+        if (structure_arr != nullptr) {
+            size_t structure_pos = 0;
+            double inner_ring_radius =  get_float(structure_arr, i, structure_pos++);
+            double middle_ring_radius = get_float(structure_arr, i, structure_pos++);
+            double outer_ring_radius =  get_float(structure_arr, i, structure_pos++);
+            double bulge_factor =       get_float(structure_arr, i, structure_pos++);
+            double focal_length =       get_float(structure_arr, i, structure_pos++);
+            auto structure = std::make_shared<Grid::Structure>(inner_ring_radius, middle_ring_radius, outer_ring_radius,
+                                                               bulge_factor, focal_length);
+            grids.emplace_back(id, center, radius, rot_x, rot_y, rot_z, structure);
+            auto s = grids.back().structure();
+
+        } else {
+            grids.emplace_back(id, center, radius, rot_x, rot_y, rot_z);
+        }
     }
 }
 
 void buildGridsFromNpArr(PyArrayObject * bits_and_config_ptr,
+                         PyObject * maybe_grid_structure,
                          const size_t batch_size,
                          std::vector<std::vector<GeneratedGrid>> &grids_vecs) {
-    size_t nb_cpus = 2*std::thread::hardware_concurrency();
-    if (nb_cpus == 0) { nb_cpus = 1; }
-    const size_t part = batch_size / nb_cpus;
-    for (size_t i = 0; i < nb_cpus; i++) {
+    size_t nb_threads = 2*std::thread::hardware_concurrency();
+    if (nb_threads == 0) { nb_threads = 1; }
+    const size_t part = batch_size / nb_threads;
+    for (size_t i = 0; i < nb_threads; i++) {
         grids_vecs.push_back(std::vector<GeneratedGrid>());
     }
-    for (size_t i = 0; i < nb_cpus; i++) {
+    for (size_t i = 0; i < nb_threads; i++) {
         const size_t start = part * i;
         size_t end;
-        if (i + 1 == nb_cpus) {
+        if (i + 1 == nb_threads) {
             end = batch_size;
         } else {
             end = start + part;
         }
         const size_t nb_todo = end - start;
-        buildGridsFromNpArrWorkFn(bits_and_config_ptr, start, nb_todo, grids_vecs.at(i));
+        buildGridsFromNpArrWorkFn(bits_and_config_ptr, maybe_grid_structure, start, nb_todo, grids_vecs.at(i));
     }
 }
 
 py::list drawGrids(
         PyObject * bits_and_configs,
+        PyObject * maybe_grid_structure,
         const GridArtist & artist,
         py::list py_scales) {
     PyArrayObject* arr_ptr = reinterpret_cast<PyArrayObject*>(bits_and_configs);
@@ -282,7 +309,7 @@ py::list drawGrids(
     auto scales = vectorFromPyList<double>(py_scales);
     const shape4d_t out_shape{static_cast<npy_intp>(batch_size), 1, TAG_SIZE, TAG_SIZE};
     std::vector<std::vector<GeneratedGrid>> grids_vecs;
-    buildGridsFromNpArr(arr_ptr, batch_size, grids_vecs);
+    buildGridsFromNpArr(arr_ptr, maybe_grid_structure, batch_size, grids_vecs);
     py::list grids;
     for(auto & scale : scales) {
         py::handle<> scaled_grids(drawGridsParallel(artist, grids_vecs, out_shape, scale));
@@ -396,7 +423,6 @@ BOOST_PYTHON_MODULE(pybeesgrid)
     ENUM_ATTR(CELL_9_BLACK);
     ENUM_ATTR(CELL_10_BLACK);
     ENUM_ATTR(CELL_11_BLACK);
-    ENUM_ATTR(BACKGROUND_RING);
     ENUM_ATTR(IGNORE);
     ENUM_ATTR(CELL_0_WHITE);
     ENUM_ATTR(CELL_1_WHITE);

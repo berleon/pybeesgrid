@@ -13,7 +13,6 @@
 # limitations under the License.
 import collections
 
-import sys
 from .pybeesgrid import TAG_SIZE, NUM_CONFIGS, NUM_MIDDLE_CELLS
 from .pybeesgrid import GridGenerator, BadGridArtist, BlackWhiteArtist, \
     MaskGridArtist
@@ -22,10 +21,10 @@ from .pybeesgrid import drawGrids
 from .pybeesgrid import INNER_BLACK_SEMICIRCLE, CELL_0_BLACK, CELL_1_BLACK, \
     CELL_2_BLACK, CELL_3_BLACK, CELL_4_BLACK, CELL_5_BLACK, CELL_6_BLACK, \
     CELL_7_BLACK, CELL_8_BLACK, CELL_9_BLACK, CELL_10_BLACK, CELL_11_BLACK, \
-    BACKGROUND_RING, IGNORE, CELL_0_WHITE, CELL_1_WHITE, CELL_2_WHITE, \
-    CELL_3_WHITE,  CELL_4_WHITE, CELL_5_WHITE, CELL_6_WHITE, CELL_7_WHITE, \
-    CELL_8_WHITE, CELL_9_WHITE, CELL_10_WHITE, CELL_11_WHITE, \
-    OUTER_WHITE_RING, INNER_WHITE_SEMICIRCLE
+    IGNORE, CELL_0_WHITE, CELL_1_WHITE, CELL_2_WHITE, CELL_3_WHITE,  \
+    CELL_4_WHITE, CELL_5_WHITE, CELL_6_WHITE, CELL_7_WHITE, CELL_8_WHITE, \
+    CELL_9_WHITE, CELL_10_WHITE, CELL_11_WHITE, OUTER_WHITE_RING, \
+    INNER_WHITE_SEMICIRCLE
 from . import  pybeesgrid as pybg
 
 import numpy as np
@@ -51,6 +50,22 @@ CONFIG_CENTER = (
     CONFIG_LABELS.index('center_y'),
 )
 
+GRID_STRUCTURE_LABELS = (
+    'inner_ring_radius',
+    'middle_ring_radius',
+    'outer_ring_radius',
+    'bulge_factor',
+    'focal_length'
+)
+
+GRID_STRUCTURE_POS = collections.OrderedDict([
+    ('inner_ring_radius', GRID_STRUCTURE_LABELS.index('inner_ring_radius')),
+    ('middle_ring_radius', GRID_STRUCTURE_LABELS.index('middle_ring_radius')),
+    ('outer_ring_radius', GRID_STRUCTURE_LABELS.index('outer_ring_radius')),
+    ('bulge_factor', GRID_STRUCTURE_LABELS.index('bulge_factor')),
+    ('focal_length', GRID_STRUCTURE_LABELS.index('focal_length')),
+])
+
 CONFIG_RADIUS = CONFIG_LABELS.index('radius')
 
 MASK = collections.OrderedDict([
@@ -67,7 +82,6 @@ MASK = collections.OrderedDict([
     ("CELL_9_BLACK",           CELL_9_BLACK),
     ("CELL_10_BLACK",          CELL_10_BLACK),
     ("CELL_11_BLACK",          CELL_11_BLACK),
-    ("BACKGROUND_RING",        BACKGROUND_RING),
     ("IGNORE",                 IGNORE),
     ("CELL_0_WHITE",           CELL_0_WHITE),
     ("CELL_1_WHITE",           CELL_1_WHITE),
@@ -95,12 +109,14 @@ CELLS_WHITE = MASK_KEYS[
 MASK_WHITE = CELLS_WHITE + ["OUTER_WHITE_RING", "INNER_WHITE_SEMICIRCLE"]
 
 
-def draw_grids(ids: np.ndarray, configs: np.ndarray, scales=[1.], artist=None):
+def draw_grids(ids: np.ndarray, configs: np.ndarray, structure=None, scales=[1.], artist=None):
     if artist is None:
         artist = BlackWhiteArtist(0, 255, 0, 1)
 
     bits_and_config = np.concatenate((ids, configs), axis=1)
-    grids = drawGrids(np.ascontiguousarray(bits_and_config), artist, scales)
+    if structure is not None:
+        structure = np.ascontiguousarray(structure)
+    grids = drawGrids(np.ascontiguousarray(bits_and_config), structure, artist, scales)
     return grids
 
 

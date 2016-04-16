@@ -40,8 +40,8 @@ endif()
 set(USE_DEEPLOCALIZER OFF)
 set(BIOTRACKER_BUILD_TESTS OFF CACHE BOOL "Don't build biotrackers tests")
 
-# use the background-ring branch
-include_pipeline("d5d8090a017867a53ac0ce02ead04a55cea933c8")
+# use the variable_grid_structure branch
+include_pipeline("6899dc54f305f4e2f6fd2c3aef944f795afd76ca")
 include_biotracker_core("b7ffb0e9499df346191227e57d7f6daf98f3a394")
 
 CPM_AddModule("cpm_catch"

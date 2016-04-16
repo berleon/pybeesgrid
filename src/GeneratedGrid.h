@@ -12,6 +12,13 @@ class GeneratedGrid : public Grid {
 public:
     explicit GeneratedGrid(Grid::idarray_t id, cv::Point2i center, double radius,
                            double angle_x, double angle_y, double angle_z);
+    explicit GeneratedGrid(Grid::idarray_t id, cv::Point2i center, double radius,
+                           double angle_x, double angle_y, double angle_z,
+                           const std::shared_ptr<Grid::Structure> structure);
+    explicit GeneratedGrid(Grid::idarray_t id, cv::Point2i center, double radius,
+                           double angle_x, double angle_y, double angle_z,
+                           const std::shared_ptr<Grid::Structure> structure,
+                           const std::shared_ptr<Grid::coordinates3D_t> coordinates3D);
 
     virtual ~GeneratedGrid() override = default;
     int getLabelAsInt() const;
@@ -27,8 +34,10 @@ public:
         return _coordinates2D;
     }
     GeneratedGrid scale(double factor) const;
-private:
-    cv::Scalar tribool2Color(const boost::logic::tribool &tribool) const;
+
+    inline const std::shared_ptr<Grid::Structure> structure() const {
+        return _structure;
+    }
 };
 
 }
