@@ -2,6 +2,7 @@
 
 #include <pipeline/common/Grid.h>
 #include <boost/logic/tribool.hpp>
+#include <pipeline/util/CvHelper.h>
 
 namespace beesgrid {
 
@@ -144,6 +145,40 @@ void BlackWhiteArtist::_draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2
         cv::resize(blured, img, img.size());
     } else {
         draw_func(grid, img, center);
+    }
+}
+
+void DepthMapArtist::_draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2i center) {
+    const cv::Rect img_rect(cv::Point(), img.size());
+    const auto rotationMatrix = CvHelper::rotationMatrix(grid.getZRotation(), grid.getYRotation(), grid.getXRotation());
+    const size_t nb_rings = static_cast<size_t>(grid.getRadius() / DISTANCE_BETWEEN_RINGS);
+
+    const double bulge_factor = grid.structure()->BULGE_FACTOR;
+    const double z_outer = grid.z_coordinate(1, bulge_factor);
+
+    for(size_t i = 0; i < nb_rings; i++) {
+        const double radius = i / static_cast<double>(nb_rings);
+        const double circumference = 2*M_PI*grid.getRadius()*radius;
+        const size_t nb_points = std::max(static_cast<size_t>(circumference / DISTANCE_BETWEEN_POINTS), size_t(1));
+        for(size_t j = 0; j < nb_points; j++) {
+            const double angle = j * 2*M_PI / nb_points;
+            const cv::Point3d p(
+                    std::cos(angle)*radius,
+                    std::sin(angle)*radius,
+                    Grid::z_coordinate(radius, bulge_factor) - z_outer
+            );
+            const cv::Point3d rot_p = rotationMatrix*p;
+            const cv::Point2i projectedPoint = grid.projectPoint(rot_p) + center;
+            if(img_rect.contains(projectedPoint)) {
+                // z is between [-1, 1], map it to [0, 1] and invert it, so that higher z means nearer
+                double z = 1 - rot_p.z / 2 + 0.5;
+                u_int8_t z_as_byte = static_cast<u_int8_t >(255 * z);
+                u_int8_t  current_z = img.at<u_int8_t>(projectedPoint.y, projectedPoint.x);
+                if (z_as_byte > current_z) {
+                    img.at<u_int8_t>(projectedPoint.y, projectedPoint.x) = z_as_byte;
+                }
+            }
+        }
     }
 }
 

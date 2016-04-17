@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GeneratedGrid.h"
+
 #include "GridGenerator.h"
 
 namespace beesgrid {
@@ -24,6 +25,19 @@ public:
 
 protected:
     virtual void _draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2i center) = 0;
+};
+
+class DepthMapArtist : public GridArtist {
+public:
+    virtual std::unique_ptr<GridArtist> clone() const override {
+        return std::make_unique<DepthMapArtist>();
+    }
+
+    virtual ~DepthMapArtist() override = default;
+protected:
+    virtual void _draw(const GeneratedGrid &grid, cv::Mat &img, cv::Point2i center);
+    static constexpr double DISTANCE_BETWEEN_POINTS = 0.5;
+    static constexpr double DISTANCE_BETWEEN_RINGS = 0.5;
 };
 
 class BlackWhiteArtist : public GridArtist {

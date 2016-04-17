@@ -461,6 +461,8 @@ BOOST_PYTHON_MODULE(pybeesgrid)
 
     py::class_<MaskGridArtist, py::bases<GridArtist>>("MaskGridArtist");
 
+    py::class_<DepthMapArtist, py::bases<GridArtist>>("DepthMapArtist");
+
     py::class_<PyGTDataLoader>("GTDataLoader", py::init<py::list>())
             .def("batch", &PyGTDataLoader::batch);
 }

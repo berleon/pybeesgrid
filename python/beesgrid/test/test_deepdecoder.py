@@ -18,7 +18,8 @@ import scipy.misc
 
 from .. import TAG_SIZE, NUM_CONFIGS, CONFIG_LABELS, draw_grids, \
         generate_grids, gt_grids, NUM_MIDDLE_CELLS, CONFIG_ROTS, \
-        MaskGridArtist, BadGridArtist, BlackWhiteArtist, GRID_STRUCTURE_POS
+        MaskGridArtist, BadGridArtist, BlackWhiteArtist, DepthMapArtist, \
+        GRID_STRUCTURE_POS
 
 from timeit import Timer
 import numpy as np
@@ -167,3 +168,40 @@ def test_draw_grids_structure():
         scipy.misc.imsave(
             output_dir_artist + '/grid_{:03d}.png'.format(i),
             grid[i, 0])
+
+
+def test_draw_grids_depth_map():
+    bs = 24
+    artist = DepthMapArtist()
+
+    bits = np.random.binomial(
+        1, 0.5, (bs, NUM_MIDDLE_CELLS)).astype(np.float32)
+    configs = np.zeros((bs, NUM_CONFIGS), dtype=np.float32)
+
+    configs[:, CONFIG_ROTS[0]] = 0
+    configs[:, CONFIG_ROTS[1:]] = np.random.normal(0, np.pi/6, size=(bs, 2))
+    configs[:, CONFIG_LABELS.index('center_x')] = 0
+    configs[:, CONFIG_LABELS.index('center_y')] = 0
+    configs[:, CONFIG_LABELS.index('radius')] = 30
+
+    structure = np.zeros((bs, 5), dtype=np.float32)
+    structure[:, GRID_STRUCTURE_POS['inner_ring_radius']] = 0.45
+    structure[:, GRID_STRUCTURE_POS['middle_ring_radius']] = 0.8
+    structure[:, GRID_STRUCTURE_POS['outer_ring_radius']] = 1
+    structure[:, GRID_STRUCTURE_POS['bulge_factor']] = 0.9
+    structure[:, GRID_STRUCTURE_POS['focal_length']] = 4.0
+
+    grid, = draw_grids(bits, configs, structure, artist=artist)
+    grid_bw, = draw_grids(bits, configs, structure, artist=BlackWhiteArtist(0, 255, 127, 2))
+
+    output_dir = "testout"
+    output_dir_artist = output_dir + '/depth_map'
+    os.makedirs(output_dir_artist, exist_ok=True)
+    for i in range(len(grid)):
+        scipy.misc.imsave(
+            output_dir_artist + '/grid_{:03d}.png'.format(i),
+            grid[i, 0])
+
+        scipy.misc.imsave(
+            output_dir_artist + '/grid_{:03d}_bw.png'.format(i),
+            grid_bw[i, 0])

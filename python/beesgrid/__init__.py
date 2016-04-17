@@ -15,7 +15,7 @@ import collections
 
 from .pybeesgrid import TAG_SIZE, NUM_CONFIGS, NUM_MIDDLE_CELLS
 from .pybeesgrid import GridGenerator, BadGridArtist, BlackWhiteArtist, \
-    MaskGridArtist
+    MaskGridArtist, DepthMapArtist
 from .pybeesgrid import drawGrids
 
 from .pybeesgrid import INNER_BLACK_SEMICIRCLE, CELL_0_BLACK, CELL_1_BLACK, \
@@ -32,8 +32,8 @@ import numpy as np
 
 __all__ = ["TAG_SIZE", "NUM_MIDDLE_CELLS", "CONFIG_LABELS", "NUM_CONFIGS",
            "draw_grids", "GridGenerator", "BadGridArtist", "BlackWhiteArtist",
-           "MaskGridArtist", "MASK", "MASK_KEYS", "MASK_BLACK", "MASK_WHITE",
-            "CELLS_BLACK", "CELLS_WHITE"]
+           "MaskGridArtist", "DepthMapArtist", "MASK", "MASK_KEYS",
+           "MASK_BLACK", "MASK_WHITE", "CELLS_BLACK", "CELLS_WHITE"]
 
 
 CONFIG_LABELS = ('z_rotation', 'y_rotation', 'x_rotation',
