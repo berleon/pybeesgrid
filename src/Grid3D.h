@@ -13,8 +13,8 @@
 
 
 std::vector<std::shared_ptr<PipelineGrid>> getPipelineGridsForFrame(
-		const Serialization::Data & gt_data, size_t frameNumber);
-class Grid3D : public ObjectModel
+		const BioTracker::Core::Serialization::Data & gt_data, size_t frameNumber);
+class Grid3D : public BioTracker::Core::ObjectModel
 {
 public:
 	/******************************************
