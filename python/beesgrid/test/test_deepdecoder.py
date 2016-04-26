@@ -66,8 +66,10 @@ def test_gt_loader_all():
     only_once = 0
     for grids, bits, config in gt_grids(gt_files, all=True):
         assert grids.shape[0] >= 300
+        assert 0.5 in bits
         only_once += 1
     assert only_once == 1
+
 
 
 def test_benchmark():

@@ -100,11 +100,11 @@ protected:
         image_file.append(base + ".jpeg");
         return boost::filesystem::absolute(image_file).string();
     }
-    Serialization::Data loadGTData(const std::string &gt_path) {
+    BioTracker::Core::Serialization::Data loadGTData(const std::string &gt_path) {
         std::ifstream is(gt_path);
         assert(is.is_open());
         cereal::JSONInputArchive ar(is);
-        Serialization::Data data;
+        BioTracker::Core::Serialization::Data data;
         ar(data);
         return  data;
     }
@@ -163,16 +163,16 @@ protected:
             if(box.x > 0 && box.y > 0 && box.x + box.width < image.cols && box.y + box.height < image.rows) {
                 // TODO:: add border
                 _img_cache.emplace_back(image(box).clone());
-                std::vector<float> bits;
+                /*std::vector<float> bits;
                 for(const auto & bit : triboolIDtoVector<Dtype>(gt_grid->getIdArray())) {
                     bits.push_back(bit);
-                }
+                }*/
                 _gt_grids_cache.push_back(gt_grid);
             }
         }
         return true;
     }
-    Serialization::Data _gt_data;
+    BioTracker::Core::Serialization::Data _gt_data;
     std::vector<std::string> _gt_files;
     std::vector<cv::Mat> _img_cache;
     std::vector<GroundTruthGridSPtr> _gt_grids_cache;

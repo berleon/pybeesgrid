@@ -20,10 +20,10 @@ namespace beesgrid {
         for(size_t i = 0; i < id.size(); i++) {
             if(id[i]) {
                 id_vec.emplace_back(1);
-            } else if(id[i] == boost::tribool::indeterminate_value ){
-                id_vec.emplace_back(0.5);
-            }else {
+            } else if(! id[i]){
                 id_vec.emplace_back(0);
+            } else {
+                id_vec.emplace_back(0.5);
             }
         }
         return id_vec;

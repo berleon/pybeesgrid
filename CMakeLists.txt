@@ -42,7 +42,7 @@ set(BIOTRACKER_BUILD_TESTS OFF CACHE BOOL "Don't build biotrackers tests")
 
 # use the grid_depth_map branch
 include_pipeline("9a8c68205adb330e17529c6c042f65836e8eefed")
-include_biotracker_core("b7ffb0e9499df346191227e57d7f6daf98f3a394")
+include_biotracker_core("d231f0bd93e2f90a8c169e2eb878d0237332c344")
 
 CPM_AddModule("cpm_catch"
   GIT_REPOSITORY "https://github.com/bcachet/cpm-catch")

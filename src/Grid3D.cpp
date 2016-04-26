@@ -12,10 +12,10 @@
 #include "pipeline/util/CvHelper.h"
 
 
-std::vector<std::shared_ptr<Grid3D>> getGrid3DsForFrame(const Serialization::Data & gt_data,
+std::vector<std::shared_ptr<Grid3D>> getGrid3DsForFrame(const BioTracker::Core::Serialization::Data & gt_data,
 														size_t frameNumber) {
 	std::vector<std::shared_ptr<Grid3D>> grid3d_list;
-	for (TrackedObject const& object : gt_data.getTrackedObjects()) {
+	for (BioTracker::Core::TrackedObject const& object : gt_data.getTrackedObjects()) {
 		const std::shared_ptr<Grid3D> grid3d = object.maybeGet<Grid3D>(frameNumber);
 		if(grid3d) {
 			grid3d_list.push_back(grid3d);
@@ -37,7 +37,7 @@ std::shared_ptr<PipelineGrid> convertGrid3dToPipelineGrid(const std::shared_ptr<
 	return grid;
 }
 std::vector<std::shared_ptr<PipelineGrid>> getPipelineGridsForFrame(
-		const Serialization::Data & gt_data, size_t frameNumber) {
+		const BioTracker::Core::Serialization::Data & gt_data, size_t frameNumber) {
 	const auto &grid3ds = getGrid3DsForFrame(gt_data, frameNumber);
 	std::vector <std::shared_ptr<PipelineGrid>> pipelineGrids;
 	for (const auto &grid3d: grid3ds) {
