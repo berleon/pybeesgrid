@@ -134,7 +134,8 @@ def get_gt_files_in_dir(directory):
     return glob.glob(directory + '/**/*.tdat', recursive=True)
 
 
-def gt_grids(gt_files, batch_size=64, repeat=False, all=False):
+def gt_grids(gt_files, batch_size=64, repeat=False, all=False,
+             center='coordinates'):
     """
     Returns a `(images, id, config)` tuple, where `images` are the images of
     the bees, `id` is a (batch_size, 12) matrix of the bees' ids and config is
@@ -142,6 +143,8 @@ def gt_grids(gt_files, batch_size=64, repeat=False, all=False):
     'center_x', 'center_y' and 'radius' in this order.
 
     If `all` is True, then all ground truth tags are returned.
+    `center` returns the image coordinates for 'coordinates' or can be set to
+    zeros with 'zeros'.
     """
     if all:
         batch_size = np.iinfo(np.int64).max
@@ -155,6 +158,8 @@ def gt_grids(gt_files, batch_size=64, repeat=False, all=False):
             gt = gt.astype(np.float32) / 255.
             z, _, x = CONFIG_ROTS
             configs[:, z:x+1] = _normalize_angle(configs[:, z:x+1])
+            if center.startswith('zero'):
+                configs[:, CONFIG_CENTER] = 0
             yield gt, ids, configs
 
 
