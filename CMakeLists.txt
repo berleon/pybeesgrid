@@ -41,7 +41,7 @@ set(USE_DEEPLOCALIZER OFF)
 set(BIOTRACKER_BUILD_TESTS OFF CACHE BOOL "Don't build biotrackers tests")
 
 # use the grid_depth_map branch
-include_pipeline("9a8c68205adb330e17529c6c042f65836e8eefed")
+include_pipeline("3a75dfa3c19e7db42950749f9c2492c676d8e6a9")
 include_biotracker_core("d231f0bd93e2f90a8c169e2eb878d0237332c344")
 
 CPM_AddModule("cpm_catch"
