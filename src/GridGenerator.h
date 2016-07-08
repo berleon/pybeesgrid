@@ -2,6 +2,8 @@
 #pragma once
 
 #include <bits/unique_ptr.h>
+#include <random>
+
 #include "beesgrid.h"
 #include "GeneratedGrid.h"
 
