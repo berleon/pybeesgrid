@@ -2,10 +2,9 @@
 #pragma once
 
 #include <boost/shared_ptr.hpp>
-#include <pipeline/common/Grid.h>
+#include "Grid.h"
 #include <boost/logic/tribool.hpp>
-#include <pipeline/util/GroundTruthEvaluator.h>
-#include "Grid3D.h"
+
 
 namespace beesgrid {
     const size_t TAG_SIZE = 64;
@@ -30,30 +29,4 @@ namespace beesgrid {
     }
 
     std::string getLabelsAsString(const Grid::idarray_t & id_arr);
-
-
-    struct GroundTruthDatum {
-        std::vector<float> bits;
-        float z_rot;
-        float y_rot;
-        float x_rot;
-        float x;
-        float y;
-        float radius;
-
-        inline static GroundTruthDatum fromGrid3D(const GroundTruthGridSPtr & grid) {
-            std::vector<float> bits = triboolIDtoVector<float>(grid->getIdArray());
-            return GroundTruthDatum{
-                bits,
-                static_cast<float>(grid->getZRotation()),
-                static_cast<float>(grid->getYRotation()),
-                static_cast<float>(grid->getXRotation()),
-                static_cast<float>(grid->getCenter().x),
-                static_cast<float>(grid->getCenter().y),
-                static_cast<float>(grid->getRadius())
-            };
-        }
-    };
-
-    using gt_dataset_t = std::pair<std::vector<cv::Mat>, std::vector<GroundTruthDatum>>;
 }

@@ -1,8 +1,8 @@
 #include "GridArtist.h"
 
-#include <pipeline/common/Grid.h>
+#include "Grid.h"
 #include <boost/logic/tribool.hpp>
-#include <pipeline/util/CvHelper.h>
+#include "util/CvHelper.h"
 
 namespace beesgrid {
 

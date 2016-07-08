@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <pipeline/common/Grid.h>
+#include "Grid.h"
 
 #include "beesgrid.h"
 

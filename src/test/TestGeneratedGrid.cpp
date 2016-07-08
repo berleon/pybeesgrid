@@ -2,9 +2,10 @@
 #define CATCH_CONFIG_MAIN
 
 #include <opencv/highgui.h>
+#include <opencv2/opencv.hpp>
+
 #include "../GeneratedGrid.h"
 #include "../GridArtist.h"
-#include "../GridGenerator.h"
 #include <chrono>
 #include <catch.hpp>
 

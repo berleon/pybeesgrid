@@ -5,13 +5,12 @@
 #include <GeneratedGrid.h>
 #include <GridArtist.h>
 #include <GridGenerator.h>
-#include <pipeline/common/Grid.h>
+#include <Grid.h>
 #include <boost/python.hpp>
 #include <boost/python/numeric.hpp>
 #include <numpy/ndarraytypes.h>
 #include <numpy/ndarrayobject.h>
 
-#include <GroundTruthDataLoader.h>
 #include <iomanip>
 #include <thread>
 #include <mutex>
@@ -318,89 +317,12 @@ py::list drawGrids(
     return grids;
 }
 
-
-class PyGTDataLoader {
-public:
-    PyGTDataLoader(py::list pyfiles) :
-            _gt_loader(vectorFromPyList<std::string>(pyfiles)) { };
-
-    py::object batch(size_t batch_size, bool repeat) {
-        GTRepeat repeat_enum;
-        if (repeat) {
-            repeat_enum = REPEAT;
-        } else {
-            repeat_enum = NO_REPEAT;
-        }
-        auto opt_batch = _gt_loader.batch(batch_size, repeat_enum);
-        if(opt_batch) {
-            auto & batch = opt_batch.get();
-            batch_size = batch.first.size();
-            auto pyarr_images = imagesToPyArray(batch.first, batch_size);
-            auto pyarr_bits = gridToBitsPyArray(batch.second, batch_size);
-            auto pyarr_config = gridToConfigPyArray(batch.second, batch_size);
-
-            return py::make_tuple(
-                    py::handle<>(pyarr_images),
-                    py::handle<>(pyarr_bits),
-                    py::handle<>(pyarr_config)
-            );
-        } else {
-            return py::object(py::handle<>(Py_None));
-        }
-    };
-
-private:
-    PyObject * imagesToPyArray(std::vector<cv::Mat> images, size_t batch_size) {
-        std::array<npy_intp, 4> images_shape{static_cast<npy_intp>(batch_size), 1, TAG_SIZE, TAG_SIZE};
-        size_t image_count = get_count<4>(images_shape);
-        uchar *raw_img_data = static_cast<uchar*>(malloc(image_count * sizeof(uchar)));
-        uchar *iter_ptr = raw_img_data;
-        for(auto & mat : images) {
-            for(long j = 0; j < mat.rows; j++) {
-                memcpy(iter_ptr, mat.ptr(j), mat.cols);
-                iter_ptr += mat.cols;
-            }
-        }
-        return newPyArrayOwnedByNumpy(images_shape, NPY_UBYTE, raw_img_data);
-    }
-
-    PyObject * gridToConfigPyArray(const std::vector<GroundTruthDatum> & grids, size_t batch_size) {
-        const static size_t nb_configs = 6;
-        std::array<npy_intp, 2> shape{static_cast<npy_intp>(batch_size), nb_configs};
-        size_t count = get_count<2>(shape);
-        float *raw_data = static_cast<float*>(malloc(count * sizeof(float)));
-        float *ptr = raw_data;
-        for(const auto & grid : grids) {
-            *ptr = grid.z_rot; ++ptr;
-            *ptr = grid.y_rot; ++ptr;
-            *ptr = grid.x_rot; ++ptr;
-            *ptr = grid.x; ++ptr;
-            *ptr = grid.y; ++ptr;
-            *ptr = grid.radius; ++ptr;
-        }
-        return newPyArrayOwnedByNumpy(shape, NPY_FLOAT32, raw_data);
-    }
-
-    PyObject * gridToBitsPyArray(const std::vector<GroundTruthDatum> & grids, size_t batch_size) {
-        std::array<npy_intp, 2> shape{static_cast<npy_intp>(batch_size), NUM_MIDDLE_CELLS};
-        const size_t count = get_count<2>(shape);
-        float *raw_data = static_cast<float*>(malloc(count * sizeof(float)));
-        float *bits_ptr = raw_data;
-        for(const auto & grid : grids) {
-            memcpy(bits_ptr, &grid.bits[0], grid.bits.size()*sizeof(float));
-            bits_ptr += grid.bits.size();
-        }
-        return newPyArrayOwnedByNumpy(shape, NPY_FLOAT32, raw_data);
-    }
-
-    GroundTruthDataLoader<float> _gt_loader;
-};
-
 void * init_numpy() {
     py::numeric::array::set_module_and_type("numpy", "ndarray");
     import_array();
     return NULL;
 }
+
 #define ATTR(NAME) py::scope().attr(#NAME) = NAME
 #define ENUM_ATTR(NAME) py::scope().attr(#NAME) = size_t(NAME)
 
@@ -462,8 +384,5 @@ BOOST_PYTHON_MODULE(pybeesgrid)
     py::class_<MaskGridArtist, py::bases<GridArtist>>("MaskGridArtist");
 
     py::class_<DepthMapArtist, py::bases<GridArtist>>("DepthMapArtist");
-
-    py::class_<PyGTDataLoader>("GTDataLoader", py::init<py::list>())
-            .def("batch", &PyGTDataLoader::batch);
 }
 

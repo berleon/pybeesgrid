@@ -37,13 +37,6 @@ else()
         SOURCE_DIR "${CMAKECONFIG_PATH}")
 endif()
 
-set(USE_DEEPLOCALIZER OFF)
-set(BIOTRACKER_BUILD_TESTS OFF CACHE BOOL "Don't build biotrackers tests")
-
-# use the grid_depth_map branch
-include_pipeline("3a75dfa3c19e7db42950749f9c2492c676d8e6a9")
-include_biotracker_core("d231f0bd93e2f90a8c169e2eb878d0237332c344")
-
 CPM_AddModule("cpm_catch"
   GIT_REPOSITORY "https://github.com/bcachet/cpm-catch")
 
@@ -55,10 +48,10 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ ${CMAKE_MODULE_PATH})
 
 find_package(OpenCV REQUIRED)
-find_package(OpenGL REQUIRED)
 find_package(Threads REQUIRED)
-find_package(Boost COMPONENTS system filesystem serialization python3 program_options REQUIRED)
-find_package(gflags REQUIRED)
+find_package(Boost COMPONENTS system filesystem python3 REQUIRED)
+find_package(PythonLibs 3 REQUIRED)
+find_package(Numpy REQUIRED)
 
 include_directories(
     SYSTEM ${CATCH_INCLUDE_DIR}
