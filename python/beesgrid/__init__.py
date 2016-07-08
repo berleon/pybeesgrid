@@ -29,13 +29,12 @@ from .pybeesgrid import INNER_BLACK_SEMICIRCLE, CELL_0_BLACK, CELL_1_BLACK, \
 from . import pybeesgrid as pybg
 
 import numpy as np
+import warnings
 
-
-__all__ = ["TAG_SIZE", "NUM_MIDDLE_CELLS", "CONFIG_LABELS", "NUM_CONFIGS",
-           "draw_grids", "GridGenerator", "BadGridArtist", "BlackWhiteArtist",
-           "MaskGridArtist", "DepthMapArtist", "MASK", "MASK_KEYS",
-           "MASK_BLACK", "MASK_WHITE", "CELLS_BLACK", "CELLS_WHITE"]
-
+tag_id = ['bits']
+tag_config = ['z_rotation', 'y_rotation', 'x_rotation', 'center', 'radius']
+tag_structure = ['inner_ring_radius', 'middle_ring_radius', 'outer_ring_radius', 'bulge_factor',
+                 'focal_length']
 
 CONFIG_LABELS = ('z_rotation', 'y_rotation', 'x_rotation',
                  'center_x', 'center_y', 'radius')
@@ -50,22 +49,6 @@ CONFIG_CENTER = (
     CONFIG_LABELS.index('center_x'),
     CONFIG_LABELS.index('center_y'),
 )
-
-GRID_STRUCTURE_LABELS = (
-    'inner_ring_radius',
-    'middle_ring_radius',
-    'outer_ring_radius',
-    'bulge_factor',
-    'focal_length'
-)
-
-GRID_STRUCTURE_POS = collections.OrderedDict([
-    ('inner_ring_radius', GRID_STRUCTURE_LABELS.index('inner_ring_radius')),
-    ('middle_ring_radius', GRID_STRUCTURE_LABELS.index('middle_ring_radius')),
-    ('outer_ring_radius', GRID_STRUCTURE_LABELS.index('outer_ring_radius')),
-    ('bulge_factor', GRID_STRUCTURE_LABELS.index('bulge_factor')),
-    ('focal_length', GRID_STRUCTURE_LABELS.index('focal_length')),
-])
 
 CONFIG_RADIUS = CONFIG_LABELS.index('radius')
 
@@ -110,15 +93,58 @@ CELLS_WHITE = MASK_KEYS[
 MASK_WHITE = CELLS_WHITE + ["OUTER_WHITE_RING", "INNER_WHITE_SEMICIRCLE"]
 
 
-def draw_grids(ids: np.ndarray, configs: np.ndarray, structure=None, scales=[1.], artist=None):
+def dtype_tag_params(nb_bits=12, with_structure=False):
+    keys = tag_id + tag_config
+    if with_structure:
+        keys += tag_structure
+    reps = {key: 1 for key in keys}
+    reps['bits'] = nb_bits
+    reps['center'] = 2
+    return [(key, "({},)float32".format(n)) for key, n in reps.items()]
+
+
+def draw_grids(params, with_structure='auto', scales=[1.], artist=None):
+    def get_positions(keys):
+        positions = {}
+        i = 0
+        for name in keys:
+            positions[name] = i
+            i += len(params[name][0])
+        return positions, i
+
+    def array_fill_by_keys(struct_arr, keys, positions, arr):
+        for name in keys:
+            b = positions[name]
+            e = b + len(struct_arr[name][0])
+            arr[:, b:e] = struct_arr[name]
+
     if artist is None:
         artist = BlackWhiteArtist(0, 255, 0, 1)
 
-    bits_and_config = np.concatenate((ids, configs), axis=1)
-    if structure is not None:
+    batch_size = len(params['bits'])
+    positions, size = get_positions(tag_id + tag_config)
+    bits_and_config = np.zeros((batch_size, size), dtype=np.float32)
+    array_fill_by_keys(params, tag_id + tag_config, positions, bits_and_config)
+
+    if with_structure == 'auto':
+        with_structure = all([struct_key in params.dtype.names for struct_key in tag_structure])
+    if with_structure:
+        struct_positions, struct_size = get_positions(tag_structure)
+        structure = np.zeros((batch_size, struct_size), dtype=np.float32)
+        array_fill_by_keys(params, tag_structure, struct_positions, structure)
         structure = np.ascontiguousarray(structure)
-    grids = drawGrids(np.ascontiguousarray(bits_and_config), structure, artist, scales)
-    return grids
+    else:
+        structure = None
+    bits_and_config = np.ascontiguousarray(bits_and_config)
+    if structure is not None and (structure == 0).all():
+        warnings.warn(
+            "draw_grids got a structure that is all zero. Did you use "
+            "`dtype_tag_params(with_structure=True)`"
+            " and forgot to set the structure?")
+
+    assert bits_and_config.dtype == np.float32
+    assert bits_and_config.flags['C_CONTIGUOUS']
+    return drawGrids(bits_and_config, structure, artist, scales)
 
 
 def _normalize_angle(x):
@@ -155,28 +181,15 @@ def gt_grids(gt_files, batch_size=64, repeat=False, all=False,
             break
         else:
             gt, ids, configs = batch
+            params = np.zeros(len(ids), dtype_tag_params())
+            params['bits'] = ids
+            z, y, x = CONFIG_ROTS
+            params['z_rotation'] = _normalize_angle(configs[:, z, np.newaxis])
+            params['y_rotation'] = _normalize_angle(configs[:, y, np.newaxis])
+            params['x_rotation'] = _normalize_angle(configs[:, x, np.newaxis])
+            params['center'] = configs[:, CONFIG_CENTER]
+            params['radius'] = configs[:, CONFIG_RADIUS, np.newaxis]
             gt = gt.astype(np.float32) / 255.
-            z, _, x = CONFIG_ROTS
-            configs[:, z:x+1] = _normalize_angle(configs[:, z:x+1])
             if center.startswith('zero'):
-                configs[:, CONFIG_CENTER] = 0
-            yield gt, ids, configs
-
-
-def generate_grids(batch_size=64, generator=None, with_gird_params=False,
-                   artist=None, scales=[1.]):
-    """
-    Returns a tuple with `(b_1, b_2, .., b_m, label, grid_params)`,
-    where `b_i` is the batch with scale `scales[i]`.
-    """
-    if generator is None:
-        generator = GridGenerator()
-    if artist is None:
-        artist = BadGridArtist()
-    while True:
-        batch = pybg.generateBatch(generator, artist, batch_size, scales)
-        if with_gird_params:
-            yield batch
-        else:
-            yield batch[:len(scales)+1]
-
+                params['center'] = 0
+            yield gt, params

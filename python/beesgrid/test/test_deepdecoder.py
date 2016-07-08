@@ -13,109 +13,46 @@
 # limitations under the License.
 import os
 
-import pytest
 import scipy.misc
 
-from .. import TAG_SIZE, NUM_CONFIGS, CONFIG_LABELS, draw_grids, \
-        generate_grids, gt_grids, NUM_MIDDLE_CELLS, CONFIG_ROTS, \
+from .. import TAG_SIZE, NUM_CONFIGS, draw_grids, \
+        gt_grids, NUM_MIDDLE_CELLS, \
         MaskGridArtist, BadGridArtist, BlackWhiteArtist, DepthMapArtist, \
-        GRID_STRUCTURE_POS
+        dtype_tag_params
 
 from timeit import Timer
 import numpy as np
+import pytest
 
-
-def test_generate_grids():
-    bs = 64
-    grids, labels = next(generate_grids(bs))
-    assert grids.shape == (bs, 1, TAG_SIZE, TAG_SIZE)
-    assert labels.shape == (bs, NUM_MIDDLE_CELLS)
-
-
-def test_generate_grids_scaled():
-    bs = 64
-    grids_1, grids_05, grids_025, labels = next(generate_grids(bs, scales=[1, 0.5, 0.25]))
-    assert grids_1.shape == (bs, 1, TAG_SIZE, TAG_SIZE)
-    assert grids_05.shape == (bs, 1, TAG_SIZE//2, TAG_SIZE//2)
-    assert grids_025.shape == (bs, 1, TAG_SIZE//4, TAG_SIZE//4)
-    assert labels.shape == (bs, NUM_MIDDLE_CELLS)
-
-
-def test_gt_loader_bs():
-    bs = 64
-    gt_files = ["../../src/test/testdata/Cam_0_20140804152006_3.tdat"] * 3
-    last_iteration_occured = False
-    for grids, bits, config in gt_grids(gt_files, batch_size=bs):
-        if grids.shape[0] < bs:
-            assert not last_iteration_occured
-            last_iteration_occured = True
-            bs = grids.shape[0]
-
-        assert grids.shape == (bs, 1, TAG_SIZE, TAG_SIZE)
-        assert bits.shape == (bs, NUM_MIDDLE_CELLS)
-        assert config.shape == (bs, NUM_CONFIGS)
-
-        z, y, x = CONFIG_ROTS
-        assert ((-np.pi <= config[:, z]) & (config[:, z] <= np.pi)).all()
-        assert ((-np.pi <= config[:, y]) & (config[:, y] <= np.pi)).all()
-        assert ((-np.pi <= config[:, x]) & (config[:, x] <= np.pi)).all()
-
-
-def test_gt_loader_all():
-    gt_files = ["../../src/test/testdata/Cam_0_20140804152006_3.tdat"] * 3
-    only_once = 0
-    for grids, bits, config in gt_grids(gt_files, all=True):
-        assert grids.shape[0] >= 300
-        assert 0.5 in bits
-        only_once += 1
-    assert only_once == 1
-
-
-
-def test_benchmark():
-    bs = 6400
-    n = 10
-    t = Timer(lambda: next(generate_grids(bs)))
-    print("need {:.5f}s for {} grids".format(t.timeit(n) / n, bs))
 
 def test_draw_benchmark():
     bs = 64
-    n = 1000
-    bits = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS)).astype(np.float32)
-    configs = np.zeros((bs, NUM_CONFIGS), dtype=np.float32)
-    configs[:, CONFIG_LABELS.index('center_x')] = TAG_SIZE // 2
-    configs[:, CONFIG_LABELS.index('center_y')] = TAG_SIZE // 2
-    configs[:, CONFIG_LABELS.index('radius')] = np.linspace(0, 32, num=bs)
-    t = Timer(lambda: draw_grids(bits, configs))
+    n = 100
+    params = np.zeros(bs, dtype_tag_params(with_structure=False))
+    params['bits'] = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS))
+    params['center'] = TAG_SIZE // 2
+    params['center'] = TAG_SIZE // 2
+    params['radius'] = np.linspace(0, 32, num=bs).reshape(-1, 1)
+    t = Timer(lambda: draw_grids(params))
     print("need {:.5f}s for {} grids".format(t.timeit(n) / n, bs))
 
-def test_draw_grids_checks_shape():
-    bs = 64
-    too_many_dims = NUM_CONFIGS + 10
-    bits = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS)).astype(np.float32)
-    configs = np.zeros((bs, too_many_dims), dtype=np.float32)
-    with pytest.raises(ValueError):
-        draw_grids(bits, configs)
 
-
-def test_draw_grids_checks_dims():
-    bs = 64
-    too_many_dims = bs
-    bits = np.random.binomial(1, 0.5, (bs, too_many_dims, NUM_MIDDLE_CELLS)).astype(np.float32)
-    configs = np.zeros((bs, too_many_dims, NUM_CONFIGS), dtype=np.float32)
-    with pytest.raises(ValueError):
-        draw_grids(bits, configs)
-
-
-def test_draw_grids_paint():
+def test_warns_if_structure_is_zero():
     bs = 256
-    bits = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS)).astype(np.float32)
-    configs = np.zeros((bs, NUM_CONFIGS), dtype=np.float32)
-    configs[:, CONFIG_LABELS.index('center_x')] = 0
-    configs[:, CONFIG_LABELS.index('center_y')] = 0
-    configs[:, CONFIG_LABELS.index('radius')] = np.linspace(0, 32, num=bs)
-    grids, = draw_grids(bits, configs)
-    output_dir = "testout"
+    with pytest.warns(UserWarning):
+        params = np.zeros(bs, dtype_tag_params(with_structure=True))
+        draw_grids(params)
+
+
+def test_draw_grids_increasing_radius():
+    bs = 256
+
+    params = np.zeros(bs, dtype_tag_params(with_structure=False))
+    params['bits'] = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS))
+    params['center'] = 0
+    params['radius'] = np.linspace(0, 32, num=bs).reshape(-1, 1)
+    grids, = draw_grids(params)
+    output_dir = "testout/draw_grids_increasing_radius"
     os.makedirs(output_dir, exist_ok=True)
     for i in range(len(grids)):
         scipy.misc.imsave(output_dir + '/grid_{:03d}.png'.format(i), grids[i, 0])
@@ -125,17 +62,18 @@ def test_draw_grids_paint_scale():
     bs = 256
     artists = [MaskGridArtist(), BlackWhiteArtist(0, 255, 200, 4), BadGridArtist()]
     for artist in artists:
-        bits = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS)).astype(np.float32)
-        configs = np.zeros((bs, NUM_CONFIGS), dtype=np.float32)
-        configs[:, CONFIG_LABELS.index('center_x')] = 0
-        configs[:, CONFIG_LABELS.index('center_y')] = 0
-        configs[:, CONFIG_LABELS.index('radius')] = np.linspace(0, 32, num=bs)
+
+        params = np.zeros(bs, dtype_tag_params())
+        params['bits'] = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS))
+
+        params['center'] = 0
+        params['radius'] = np.linspace(0, 32, num=bs).reshape((-1, 1))
         scales = [2, 1, 0.5]
-        grids = draw_grids(bits, configs, scales=scales, artist=artist)
+        grids = draw_grids(params, scales=scales, artist=artist)
         output_dir = "testout"
         os.makedirs(output_dir, exist_ok=True)
         for scale, grid in zip(scales, grids):
-            output_dir_artist = output_dir + '/{}_grid_{}'.format(
+            output_dir_artist = output_dir + '/draw_grids_scale/{}_grid_{}'.format(
                 type(artist).__name__, scale)
             os.makedirs(output_dir_artist, exist_ok=True)
             for i in range(len(grid)):
@@ -147,21 +85,19 @@ def test_draw_grids_paint_scale():
 def test_draw_grids_structure():
     bs = 256
     artist = BlackWhiteArtist(0, 255, 127, 4)
-    bits = np.random.binomial(
-        1, 0.5, (bs, NUM_MIDDLE_CELLS)).astype(np.float32)
-    configs = np.zeros((bs, NUM_CONFIGS), dtype=np.float32)
-    configs[:, CONFIG_LABELS.index('center_x')] = 0
-    configs[:, CONFIG_LABELS.index('center_y')] = 0
-    configs[:, CONFIG_LABELS.index('radius')] = 24
+    params = np.zeros(bs, dtype_tag_params(with_structure=True))
+    params['bits'] = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS))
 
-    structure = np.zeros((bs, 5), dtype=np.float32)
-    structure[:, GRID_STRUCTURE_POS['inner_ring_radius']] = 0.5
-    structure[:, GRID_STRUCTURE_POS['middle_ring_radius']] = 0.8
-    structure[:, GRID_STRUCTURE_POS['outer_ring_radius']] = 1
-    structure[:, GRID_STRUCTURE_POS['bulge_factor']] = 0.4
-    structure[:, GRID_STRUCTURE_POS['focal_length']] = 1.0
+    params['center'] = 0
+    params['radius'] = 24
 
-    grid, = draw_grids(bits, configs, structure, artist=artist)
+    params['inner_ring_radius'] = 0.5
+    params['middle_ring_radius'] = 0.8
+    params['outer_ring_radius'] = 1
+    params['bulge_factor'] = 0.4
+    params['focal_length'] = 1.0
+
+    grid, = draw_grids(params, with_structure=True, artist=artist)
 
     output_dir = "testout"
     output_dir_artist = output_dir + '/structure'
@@ -176,25 +112,33 @@ def test_draw_grids_depth_map():
     bs = 24
     artist = DepthMapArtist()
 
-    bits = np.random.binomial(
-        1, 0.5, (bs, NUM_MIDDLE_CELLS)).astype(np.float32)
-    configs = np.zeros((bs, NUM_CONFIGS), dtype=np.float32)
+    params = np.zeros(bs, dtype_tag_params(with_structure=True))
+    params['bits'] = np.random.binomial(1, 0.5, (bs, NUM_MIDDLE_CELLS))
 
-    configs[:, CONFIG_ROTS[0]] = 0
-    configs[:, CONFIG_ROTS[1:]] = np.random.normal(0, np.pi/6, size=(bs, 2))
-    configs[:, CONFIG_LABELS.index('center_x')] = 0
-    configs[:, CONFIG_LABELS.index('center_y')] = 0
-    configs[:, CONFIG_LABELS.index('radius')] = 30
+    params['z_rotation'] = 0
+    params['y_rotation'] = np.random.normal(0, np.pi/6, size=(bs, 1))
+    params['x_rotation'] = np.random.normal(0, np.pi/6, size=(bs, 1))
+    params['center'] = 0
+    params['radius'] = 20
 
-    structure = np.zeros((bs, 5), dtype=np.float32)
-    structure[:, GRID_STRUCTURE_POS['inner_ring_radius']] = 0.45
-    structure[:, GRID_STRUCTURE_POS['middle_ring_radius']] = 0.8
-    structure[:, GRID_STRUCTURE_POS['outer_ring_radius']] = 1
-    structure[:, GRID_STRUCTURE_POS['bulge_factor']] = 0.9
-    structure[:, GRID_STRUCTURE_POS['focal_length']] = 4.0
+    params['inner_ring_radius'] = 0.45
+    params['middle_ring_radius'] = 0.8
+    params['outer_ring_radius'] = 1
+    params['bulge_factor'] = 0.9
+    params['focal_length'] = 4.0
 
-    grid, = draw_grids(bits, configs, structure, artist=artist)
-    grid_bw, = draw_grids(bits, configs, structure, artist=BlackWhiteArtist(0, 255, 127, 2))
+
+    params_copy = params.copy()
+    grid, = draw_grids(params, artist=artist)
+    assert (params == params_copy).all()
+    bw_artist = BlackWhiteArtist(0, 254, 120, 4)
+    bw_artist = DepthMapArtist()
+    bw_artist = MaskGridArtist()
+    bw_artist = BadGridArtist()
+
+    grid_bw, = draw_grids(params, artist=bw_artist)
+
+    assert (params == params_copy).all()
 
     output_dir = "testout"
     output_dir_artist = output_dir + '/depth_map'
