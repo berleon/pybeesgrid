@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import collections
-import glob
 
 from .pybeesgrid import TAG_SIZE, NUM_CONFIGS, NUM_MIDDLE_CELLS
 from .pybeesgrid import GridGenerator, BadGridArtist, BlackWhiteArtist, \
@@ -26,15 +25,17 @@ from .pybeesgrid import INNER_BLACK_SEMICIRCLE, CELL_0_BLACK, CELL_1_BLACK, \
     CELL_4_WHITE, CELL_5_WHITE, CELL_6_WHITE, CELL_7_WHITE, CELL_8_WHITE, \
     CELL_9_WHITE, CELL_10_WHITE, CELL_11_WHITE, OUTER_WHITE_RING, \
     INNER_WHITE_SEMICIRCLE
-from . import pybeesgrid as pybg
+
 
 import numpy as np
 import warnings
 
-tag_id = ['bits']
-tag_config = ['z_rotation', 'y_rotation', 'x_rotation', 'center', 'radius']
-tag_structure = ['inner_ring_radius', 'middle_ring_radius', 'outer_ring_radius', 'bulge_factor',
+TAG_ID = ['bits']
+TAG_CONFIG = ['z_rotation', 'y_rotation', 'x_rotation', 'center', 'radius']
+TAG_STRUCTURE = ['inner_ring_radius', 'middle_ring_radius', 'outer_ring_radius', 'bulge_factor',
                  'focal_length']
+
+TAG_LABEL_NAMES = TAG_ID + TAG_CONFIG + TAG_STRUCTURE
 
 CONFIG_LABELS = ('z_rotation', 'y_rotation', 'x_rotation',
                  'center_x', 'center_y', 'radius')
@@ -94,9 +95,9 @@ MASK_WHITE = CELLS_WHITE + ["OUTER_WHITE_RING", "INNER_WHITE_SEMICIRCLE"]
 
 
 def dtype_tag_params(nb_bits=12, with_structure=False):
-    keys = tag_id + tag_config
+    keys = TAG_ID + TAG_CONFIG
     if with_structure:
-        keys += tag_structure
+        keys += TAG_STRUCTURE
     reps = {key: 1 for key in keys}
     reps['bits'] = nb_bits
     reps['center'] = 2
@@ -122,16 +123,16 @@ def draw_grids(params, with_structure='auto', scales=[1.], artist=None):
         artist = BlackWhiteArtist(0, 255, 0, 1)
 
     batch_size = len(params['bits'])
-    positions, size = get_positions(tag_id + tag_config)
+    positions, size = get_positions(TAG_ID + TAG_CONFIG)
     bits_and_config = np.zeros((batch_size, size), dtype=np.float32)
-    array_fill_by_keys(params, tag_id + tag_config, positions, bits_and_config)
+    array_fill_by_keys(params, TAG_ID + TAG_CONFIG, positions, bits_and_config)
 
     if with_structure == 'auto':
-        with_structure = all([struct_key in params.dtype.names for struct_key in tag_structure])
+        with_structure = all([struct_key in params.dtype.names for struct_key in TAG_STRUCTURE])
     if with_structure:
-        struct_positions, struct_size = get_positions(tag_structure)
+        struct_positions, struct_size = get_positions(TAG_STRUCTURE)
         structure = np.zeros((batch_size, struct_size), dtype=np.float32)
-        array_fill_by_keys(params, tag_structure, struct_positions, structure)
+        array_fill_by_keys(params, TAG_STRUCTURE, struct_positions, structure)
         structure = np.ascontiguousarray(structure)
     else:
         structure = None

@@ -15,10 +15,8 @@ import os
 
 import scipy.misc
 
-from .. import TAG_SIZE, NUM_CONFIGS, draw_grids, \
-        NUM_MIDDLE_CELLS, \
-        MaskGridArtist, BadGridArtist, BlackWhiteArtist, DepthMapArtist, \
-        dtype_tag_params
+from .. import TAG_SIZE, draw_grids, NUM_MIDDLE_CELLS, MaskGridArtist, \
+    BadGridArtist, BlackWhiteArtist, DepthMapArtist, dtype_tag_params
 
 from timeit import Timer
 import numpy as np
