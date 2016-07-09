@@ -16,7 +16,7 @@ import os
 import scipy.misc
 
 from .. import TAG_SIZE, NUM_CONFIGS, draw_grids, \
-        gt_grids, NUM_MIDDLE_CELLS, \
+        NUM_MIDDLE_CELLS, \
         MaskGridArtist, BadGridArtist, BlackWhiteArtist, DepthMapArtist, \
         dtype_tag_params
 
