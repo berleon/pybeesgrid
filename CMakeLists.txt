@@ -38,7 +38,7 @@ else()
 endif()
 
 CPM_AddModule("cpm_catch"
-  GIT_REPOSITORY "https://github.com/bcachet/cpm-catch")
+    GIT_REPOSITORY "https://github.com/berleon/cpm_catch")
 
 CPM_Finish()
 
