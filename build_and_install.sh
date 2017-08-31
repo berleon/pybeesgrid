@@ -10,9 +10,13 @@ else
     exit 1
 fi
 
+if [ "$PIP" == "" ]; then
+    PIP="pip"
+fi
+
 mkdir -p build
 cd build
 cmake ..
 make -j $NPROC create_python_pkg
 cd python/package
-pip install -U --no-deps .
+$PIP install -U --no-deps .
